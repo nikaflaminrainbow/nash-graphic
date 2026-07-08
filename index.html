@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>نش گرافیک | Nash Graphic</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="theme-dark" data-lang="fa">
+
+<script>
+  // ═══ Live JS Error Catcher — برای دیباگ روی موبایل ═══
+  window.__nashErrors = [];
+  function __nashShowErr() {
+    let box = document.getElementById('nash-err-box');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'nash-err-box';
+      box.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:55vh;overflow-y:auto;background:#2a0000;color:#ffb3b3;font-family:monospace;font-size:11px;padding:12px;z-index:999999;direction:ltr;text-align:left;border-top:3px solid #ff3333;white-space:pre-wrap;word-break:break-word;';
+      document.body.appendChild(box);
+    }
+    box.innerHTML = '<b style="color:#fff;font-size:13px">⚠️ ' + window.__nashErrors.length + ' JS Error(s) — tap to close</b><br><br>' +
+      window.__nashErrors.map(function(e, idx) {
+        return (idx+1) + '. ' + e;
+      }).join('<br><br>');
+    box.onclick = function () { box.remove(); };
+  }
+  window.addEventListener('error', function (e) {
+    const msg = e.message + '\n   at ' + (e.filename ? e.filename.split('/').pop() : '?') + ':' + e.lineno + ':' + e.colno;
+    window.__nashErrors.push(msg);
+    __nashShowErr();
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    const msg = 'Promise rejected: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason)) +
+      (e.reason && e.reason.stack ? '\n   ' + e.reason.stack.split('\n').slice(0,2).join('\n   ') : '');
+    window.__nashErrors.push(msg);
+    __nashShowErr();
+  });
+</script>
+
+<!-- ===== LOADING OVERLAY ===== -->
+<div id="loading-overlay" class="loading-overlay">
+  <div class="spinner"></div>
+</div>
+
+<!-- ===== TOAST NOTIFICATIONS ===== -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- ===== HEADER ===== -->
+<header id="main-header" class="header glass">
+  <!-- ردیف اول: لوگو + دکمه‌های action -->
+  <div class="container header-top">
+    <div class="header-logo">
+      <img id="site-logo" src="" alt="Nash Graphic" onerror="this.style.display='none'" />
+      <span id="header-logo-text" class="logo-text">نش گرافیک</span>
+    </div>
+    <div class="header-actions">
+      <button id="lang-toggle" class="btn-icon" title="تغییر زبان">FA/EN</button>
+      <button id="cart-btn" class="btn-icon cart-btn" title="سبد خرید">
+        🛒 <span id="cart-count" class="cart-count">0</span>
+      </button>
+      <div id="user-menu" class="user-menu"></div>
+    </div>
+  </div>
+  <!-- ردیف دوم: منو — همیشه نمایش داده میشه -->
+  <div class="header-nav-row">
+    <div class="container">
+      <nav id="main-nav" class="main-nav">
+        <ul id="nav-list" class="nav-list"></ul>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main id="main-content">
+
+  <!-- PAGE: HOME -->
+  <section id="page-home" class="page active">
+    <!-- Hero Banner (ساده و پایدار) -->
+    <div id="hero-banner" class="hero-banner">
+      <img id="hero-img" src="" alt="" style="display:none" onload="this.style.display='block'" />
+      <div class="hero-overlay">
+        <div class="container">
+          <h1 id="hero-title" class="hero-title"></h1>
+          <p id="hero-subtitle" class="hero-subtitle"></p>
+          <button id="hero-cta" class="btn btn-primary btn-lg">ورود به بازارچه</button>
+        </div>
+      </div>
+    </div>
+    <!-- Stats -->
+    <div class="container">
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card glass"><div class="stat-number" id="stat-orders">0</div><div class="stat-label">سفارش ثبت‌شده</div></div>
+        <div class="stat-card glass"><div class="stat-number" id="stat-designers">0</div><div class="stat-label">طراح حرفه‌ای</div></div>
+        <div class="stat-card glass"><div class="stat-number" id="stat-printers">0</div><div class="stat-label">چاپخانه عضو</div></div>
+        <div class="stat-card glass"><div class="stat-number" id="stat-designs">0</div><div class="stat-label">طرح فعال</div></div>
+      </div>
+      <!-- Features -->
+      <div class="features-section">
+        <h2 class="section-title">ویژگی‌های ما</h2>
+        <div class="features-grid" id="features-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAGE: MARKETPLACE -->
+  <section id="page-marketplace" class="page hidden">
+    <div class="container">
+      <div class="marketplace-header">
+        <h2 class="section-title" data-i18n="marketplace">بازارچه</h2>
+        <button id="upload-design-btn" class="btn btn-primary" data-i18n="upload">آپلود طرح</button>
+      </div>
+      <div class="marketplace-filters glass">
+        <input id="search-input" type="text" class="input" placeholder="جستجو در طرح‌ها..." data-i18n-placeholder="search" />
+        <select id="category-filter" class="input select"><option value="">همه دسته‌ها</option></select>
+        <select id="sort-filter" class="input select">
+          <option value="newest">جدیدترین</option>
+          <option value="popular">پرفروش‌ترین</option>
+          <option value="cheap">ارزان‌ترین</option>
+          <option value="expensive">گران‌ترین</option>
+        </select>
+      </div>
+      <div id="designs-grid" class="designs-grid"></div>
+      <div id="designs-loading" class="text-center py-4 hidden"><div class="spinner-sm"></div></div>
+      <div id="no-designs" class="empty-state hidden">هیچ طرحی یافت نشد</div>
+    </div>
+  </section>
+
+  <!-- PAGE: DASHBOARD (Designer) -->
+  <section id="page-designer-dashboard" class="page hidden">
+    <div class="container">
+      <h2 class="section-title" data-i18n="designerDashboard">داشبورد طراح</h2>
+      <div class="dashboard-grid">
+        <div class="dash-card glass">
+          <h3 data-i18n="myDesigns">طرح‌های من</h3>
+          <div id="my-designs-list"></div>
+          <button id="new-design-btn" class="btn btn-primary mt-2" data-i18n="newDesignBtn">+ طرح جدید</button>
+        </div>
+        <div class="dash-card glass">
+          <h3 data-i18n="salesStats">آمار فروش</h3>
+          <div id="sales-stats"></div>
+        </div>
+        <div class="dash-card glass">
+          <h3 data-i18n="receivedOrders">سفارش‌های دریافتی</h3>
+          <div id="received-orders"></div>
+        </div>
+        <div class="dash-card glass full-width">
+          <div class="flex-between">
+            <div>
+              <h3 id="portfolio-promo-title" style="margin-bottom:0.25rem">پورتفولیو و رزومه من</h3>
+              <p id="portfolio-promo-desc" style="font-size:0.85rem;color:var(--text-secondary);margin:0">رزومه و تا ۲۰ نمونه‌کار برای نمایش عمومی به مشتریان</p>
+            </div>
+            <div style="display:flex;gap:0.5rem">
+              <button id="portfolio-promo-view-btn" class="btn btn-outline btn-sm" onclick="Portfolio.viewPublic(State.user.id)">👁️ مشاهده صفحه عمومی</button>
+              <button id="portfolio-promo-manage-btn" class="btn btn-primary btn-sm" onclick="Router.navigate('portfolio-edit')">✏️ مدیریت پورتفولیو</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAGE: PORTFOLIO EDIT (Designer's own management page) -->
+  <section id="page-portfolio-edit" class="page hidden">
+    <div class="container">
+      <div class="flex-between" style="margin-bottom:1.5rem">
+        <h2 class="section-title" style="margin-bottom:0">مدیریت پورتفولیو</h2>
+        <button class="btn btn-outline btn-sm" id="portfolio-edit-view-public-btn">👁️ مشاهده صفحه عمومی</button>
+      </div>
+
+      <!-- Resume / Bio -->
+      <div class="dash-card glass" style="margin-bottom:1.5rem">
+        <h3 id="portfolio-resume-title">رزومه و معرفی</h3>
+        <textarea id="portfolio-resume" class="input" rows="6" placeholder="درباره خودتان، سوابق کاری، مهارت‌ها و تخصص‌هایتان بنویسید..."></textarea>
+        <button id="portfolio-save-resume-btn" class="btn btn-primary mt-2" onclick="Portfolio.saveResume()">💾 ذخیره رزومه</button>
+      </div>
+
+      <!-- Add new portfolio item -->
+      <div class="dash-card glass" style="margin-bottom:1.5rem">
+        <div class="flex-between">
+          <h3 id="portfolio-items-title">نمونه‌کارهای من (<span id="portfolio-count">۰</span>/۲۰)</h3>
+          <button class="btn btn-primary btn-sm" id="portfolio-add-btn" onclick="Portfolio.openAddModal()">+ افزودن نمونه‌کار</button>
+        </div>
+        <div id="portfolio-items-grid" class="portfolio-edit-grid mt-2"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAGE: PORTFOLIO VIEW (Public — anyone can see any designer's portfolio) -->
+  <section id="page-portfolio-view" class="page hidden">
+    <div class="container">
+      <button class="btn btn-ghost btn-sm" style="margin-bottom:1.5rem" onclick="history.back()">← بازگشت</button>
+      <div id="portfolio-public-content"></div>
+    </div>
+  </section>
+
+  <!-- PAGE: DASHBOARD (Printer) -->
+  <section id="page-printer-dashboard" class="page hidden">
+    <div class="container">
+      <h2 class="section-title" data-i18n="printerDashboard">داشبورد چاپخانه</h2>
+
+      <!-- بنر راهنما برای مهمان -->
+      <div id="printer-guest-banner" class="guest-banner hidden">
+        <span>👤</span>
+        <span data-i18n="guestPrinterBanner">برای ثبت سفارش و خرید پکیج، ابتدا ثبت‌نام کنید یا وارد شوید.</span>
+        <button class="btn btn-primary btn-sm" onclick="Modal.open('auth')" data-i18n="loginRegister">ورود / ثبت‌نام</button>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="dash-card glass full-width">
+          <h3 data-i18n="submitDesignOrder">ثبت سفارش طراحی</h3>
+          <div class="order-form-printer-layout">
+            <div class="order-form-grid">
+              <div>
+                <label class="label">دسته اصلی</label>
+                <select id="main-cat" class="input select" onchange="Dashboard.onMainCatChange()"><option value="">انتخاب کنید</option></select>
+              </div>
+              <div>
+                <label class="label">نوع محصول</label>
+                <select id="product-type" class="input select" onchange="Dashboard.onProductTypeChange()"><option value="">انتخاب کنید</option></select>
+              </div>
+              <div>
+                <label class="label">نحوه اجرا</label>
+                <select id="exec-method" class="input select" onchange="Dashboard.onExecMethodChange()"><option value="">انتخاب کنید</option></select>
+              </div>
+              <div>
+                <label class="label">تعداد رنگ</label>
+                <select id="color-count" class="input select" onchange="Dashboard.onColorCountChange()"><option value="">انتخاب کنید</option></select>
+              </div>
+              <div>
+                <label class="label">تعداد سفارش</label>
+                <input id="order-qty" type="number" class="input" value="1" min="1" />
+              </div>
+              <div>
+                <label class="label">قیمت پایه</label>
+                <div id="base-price" class="price-display">۰ تومان</div>
+              </div>
+            </div>
+            <div id="category-sample-box" class="category-sample-box hidden">
+              <div class="label">نمونه عکس</div>
+              <img id="category-sample-img" alt="نمونه" />
+            </div>
+          </div>
+          <button class="btn btn-primary mt-2" onclick="Dashboard.addOrderToCart()">افزودن به سبد خرید</button>
+        </div>
+        <!-- Packages -->
+        <div class="dash-card glass full-width">
+          <h3 data-i18n="bulkPackages">پکیج‌های عمده</h3>
+          <div class="packages-grid" id="packages-grid">
+            <div class="package-card bronze glass">
+              <div class="pkg-title" data-i18n="bronzePkg">پکیج برنزی</div>
+              <div class="pkg-price">۳۰,۰۰۰,۰۰۰ تومان</div>
+              <div class="pkg-desc" data-i18n="suitableSmall">مناسب برای چاپخانه‌های کوچک</div>
+              <button class="btn btn-primary btn-sm pkg-buy-btn mt-1" onclick="Cart.addPackage('bronze')" data-i18n="addToCart">افزودن به سبد</button>
+            </div>
+            <div class="package-card silver glass">
+              <div class="pkg-title" data-i18n="silverPkg">پکیج نقره‌ای</div>
+              <div class="pkg-price">۵۰,۰۰۰,۰۰۰ تومان</div>
+              <div class="pkg-desc" data-i18n="suitableMedium">مناسب برای چاپخانه‌های متوسط</div>
+              <button class="btn btn-primary btn-sm pkg-buy-btn mt-1" onclick="Cart.addPackage('silver')" data-i18n="addToCart">افزودن به سبد</button>
+            </div>
+            <div class="package-card gold glass">
+              <div class="pkg-title" data-i18n="goldPkg">پکیج طلایی</div>
+              <div class="pkg-price">۷۰,۰۰۰,۰۰۰ تومان</div>
+              <div class="pkg-desc" data-i18n="suitableLarge">مناسب برای چاپخانه‌های بزرگ</div>
+              <button class="btn btn-primary btn-sm pkg-buy-btn mt-1" onclick="Cart.addPackage('gold')" data-i18n="addToCart">افزودن به سبد</button>
+            </div>
+            <div class="package-card special glass">
+              <div class="pkg-title" data-i18n="specialPkg">پکیج ویژه</div>
+              <div class="pkg-price">۸,۰۰۰,۰۰۰ تومان</div>
+              <div class="pkg-desc" data-i18n="trialOrder">سفارش آزمایشی ویژه</div>
+              <button class="btn btn-primary btn-sm pkg-buy-btn mt-1" onclick="Cart.addPackage('special')" data-i18n="addToCart">افزودن به سبد</button>
+            </div>
+          </div>
+        </div>
+        <div class="dash-card glass">
+          <h3 data-i18n="myOrders">سفارش‌های من</h3>
+          <div id="printer-orders-list"></div>
+        </div>
+        <div class="dash-card glass">
+          <h3 data-i18n="purchaseHistory">تاریخچه خرید</h3>
+          <div id="purchase-history"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAGE: ADMIN PANEL -->
+  <section id="page-admin" class="page hidden">
+    <div class="container">
+      <h2 class="section-title">پنل مدیریت</h2>
+      <div class="admin-tabs">
+        <button class="tab-btn active" onclick="Admin.showTab('stats')">آمار</button>
+        <button class="tab-btn" onclick="Admin.showTab('media')">رسانه</button>
+        <button class="tab-btn" onclick="Admin.showTab('users')">کاربران</button>
+        <button class="tab-btn" onclick="Admin.showTab('designs')">طرح‌ها</button>
+        <button class="tab-btn" onclick="Admin.showTab('orders')">سفارش‌ها</button>
+        <button class="tab-btn" onclick="Admin.showTab('categories')">دسته‌بندی</button>
+        <button class="tab-btn" onclick="Admin.showTab('menu')">منوها</button>
+        <button class="tab-btn" onclick="Admin.showTab('theme')">تم سایت</button>
+        <button class="tab-btn" onclick="Admin.showTab('content')">محتوا</button>
+        <button class="tab-btn" onclick="Admin.showTab('blog')">وبلاگ</button>
+        <button class="tab-btn" onclick="Admin.showTab('faq')">FAQ</button>
+        <button class="tab-btn" onclick="Admin.showTab('tickets')">تیکت‌ها</button>
+      </div>
+      <div id="admin-content" class="admin-content glass"></div>
+    </div>
+  </section>
+
+  <!-- PAGE: PROFILE -->
+  <section id="page-profile" class="page hidden">
+    <div class="container">
+      <h2 class="section-title" data-i18n="profile">پروفایل</h2>
+      <div class="profile-grid">
+        <div class="dash-card glass">
+          <div class="avatar-section">
+            <img id="profile-avatar" src="" alt="" class="avatar-lg" onerror="this.src=''" />
+            <button id="upload-avatar-btn" class="btn btn-outline mt-1" data-i18n="changePhoto">تغییر تصویر</button>
+            <input id="avatar-input" type="file" accept="image/*" class="hidden" />
+          </div>
+          <div class="profile-form">
+            <label class="label" data-i18n="fullName">نام کامل</label>
+            <input id="profile-name" type="text" class="input" />
+            <label class="label" data-i18n="email">ایمیل</label>
+            <input id="profile-email" type="email" class="input" disabled />
+            <label class="label" data-i18n="phone">شماره تماس</label>
+            <input id="profile-phone" type="tel" class="input" />
+            <label class="label" data-i18n="address">آدرس</label>
+            <textarea id="profile-address" class="input" rows="3"></textarea>
+            <button class="btn btn-primary mt-2" onclick="Profile.save()" data-i18n="saveChanges">ذخیره تغییرات</button>
+          </div>
+        </div>
+        <div class="dash-card glass">
+          <h3 data-i18n="newPasswordLabel">تغییر رمز عبور</h3>
+          <input id="new-password" type="password" class="input" data-i18n-placeholder="newPasswordLabel" placeholder="رمز عبور جدید" />
+          <input id="confirm-password" type="password" class="input mt-1" data-i18n-placeholder="confirmPassword" placeholder="تکرار رمز عبور" />
+          <button class="btn btn-outline mt-2" onclick="Profile.changePassword()" data-i18n="changePasswordBtn">تغییر رمز عبور</button>
+        </div>
+        <div class="dash-card glass">
+          <h3 data-i18n="orderHistory">تاریخچه سفارش‌ها</h3>
+          <div id="order-history"></div>
+        </div>
+        <div class="dash-card glass">
+          <h3 data-i18n="wishlist">علاقه‌مندی‌ها</h3>
+          <div id="wishlist-items"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAGE: ABOUT -->
+  <section id="page-about" class="page hidden">
+    <div class="container">
+      <div class="about-content glass" id="about-content">
+        <h2>درباره نش گرافیک</h2>
+        <p id="about-main-text">نش گرافیک پلتفرم تخصصی طراحی و چاپ در ایران است. ما با اتصال طراحان حرفه‌ای به چاپخانه‌های معتبر، فرایند سفارش و تحویل طرح را ساده و سریع کرده‌ایم.</p>
+      </div>
+      <!-- Team -->
+      <div class="features-section">
+        <h2 class="section-title">تیم ما</h2>
+        <div class="features-grid" id="team-grid">
+          <div class="feature-card glass">
+            <div class="feature-icon">🧑‍💼</div>
+            <div class="feature-title">شهاب احمدی</div>
+            <div class="feature-desc">مدیرعامل و بنیان‌گذار نش گرافیک</div>
+          </div>
+          <div class="feature-card glass">
+            <div class="feature-icon">🎨</div>
+            <div class="feature-title">آرش کریمی</div>
+            <div class="feature-desc">سرطراح و مدیر خلاقیت</div>
+          </div>
+          <div class="feature-card glass">
+            <div class="feature-icon">💻</div>
+            <div class="feature-title">سارا محمدی</div>
+            <div class="feature-desc">توسعه‌دهنده ارشد فرانت‌اند</div>
+          </div>
+        </div>
+      </div>
+      <!-- Contact -->
+      <div class="features-section">
+        <h2 class="section-title">اطلاعات تماس</h2>
+        <div class="glass" style="padding:2rem;border-radius:var(--radius-lg)">
+          <p style="margin-bottom:1rem">📧 nikadesigningco@gmail.com</p>
+          <p style="margin-bottom:1rem">📍 تهران، شهرک اکباتان</p>
+          <p>📞 ۰۹۳۵۱۷۶۰۰۵۴</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAGE: BLOG -->
+  <section id="page-blog" class="page hidden">
+    <div class="container">
+      <h2 class="section-title" data-i18n="blogTitle">وبلاگ</h2>
+      <div id="blog-list" class="blog-grid"></div>
+    </div>
+  </section>
+
+  <!-- PAGE: FAQ -->
+  <section id="page-faq" class="page hidden">
+    <div class="container">
+      <h2 class="section-title" data-i18n="faq">سوالات متداول</h2>
+      <div id="faq-list" class="faq-list"></div>
+    </div>
+  </section>
+
+  <!-- PAGE: LEGAL -->
+  <section id="page-legal" class="page hidden">
+    <div class="container">
+      <div class="legal-tabs">
+        <button class="tab-btn active" onclick="showLegal('terms')">شرایط استفاده</button>
+        <button class="tab-btn" onclick="showLegal('privacy')">حریم خصوصی</button>
+        <button class="tab-btn" onclick="showLegal('return')">قوانین بازگشت</button>
+      </div>
+      <div id="legal-content" class="legal-content glass"></div>
+    </div>
+  </section>
+
+  <!-- PAGE: ORDER TRACKING -->
+  <section id="page-tracking" class="page hidden">
+    <div class="container">
+      <h2 class="section-title" data-i18n="trackingTitle">پیگیری سفارش</h2>
+      <div class="tracking-search glass">
+        <input id="tracking-code-input" type="text" class="input" data-i18n-placeholder="enterTrackingCode" placeholder="کد پیگیری سفارش..." />
+        <button class="btn btn-primary" onclick="Tracking.search()" data-i18n="searchBtn">جستجو</button>
+      </div>
+      <div id="tracking-result" class="mt-3"></div>
+    </div>
+  </section>
+
+  <!-- PAGE: SUPPORT TICKETS -->
+  <section id="page-support" class="page hidden">
+    <div class="container">
+      <h2 class="section-title" data-i18n="supportTitle">پشتیبانی</h2>
+      <div class="support-grid">
+        <div class="dash-card glass">
+          <h3 data-i18n="newTicketTitle">ثبت تیکت جدید</h3>
+          <input id="ticket-name" type="text" class="input" data-i18n-placeholder="fullName" placeholder="نام شما" />
+          <input id="ticket-email" type="email" class="input mt-1" data-i18n-placeholder="email" placeholder="ایمیل شما" />
+          <input id="ticket-subject" type="text" class="input mt-1" data-i18n-placeholder="subject" placeholder="موضوع" />
+          <textarea id="ticket-message" class="input mt-1" rows="5" data-i18n-placeholder="yourMessage" placeholder="پیام شما..."></textarea>
+          <button class="btn btn-primary mt-2" onclick="Support.submitTicket()" data-i18n="sendTicketBtn">ارسال تیکت</button>
+        </div>
+        <div class="dash-card glass">
+          <h3 data-i18n="myTicketsTitle">تیکت‌های من</h3>
+          <div id="my-tickets"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAGE: 404 -->
+  <section id="page-404" class="page hidden">
+    <div class="container text-center py-8">
+      <div class="error-404">
+        <div class="error-number">404</div>
+        <h2>صفحه یافت نشد</h2>
+        <p>صفحه مورد نظر شما وجود ندارد.</p>
+        <button class="btn btn-primary mt-2" onclick="Router.navigate('home')">بازگشت به خانه</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer glass">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <span id="footer-logo-text" class="logo-text">نش گرافیک</span>
+    </div>
+    <div class="footer-links">
+      <a href="#" onclick="Router.navigate('about')">درباره ما</a>
+      <a href="#" onclick="Router.navigate('blog')">وبلاگ</a>
+      <a href="#" onclick="Router.navigate('faq')">FAQ</a>
+      <a href="#" onclick="Router.navigate('legal')">قوانین</a>
+      <a href="#" onclick="Router.navigate('support')">پشتیبانی</a>
+    </div>
+    <div class="footer-contact">
+      <p>📧 nikadesigningco@gmail.com</p>
+      <p>📞 ۰۹۳۵۱۷۶۰۰۵۴</p>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© ۱۴۰۳ نش گرافیک - تمامی حقوق محفوظ است</p>
+  </div>
+</footer>
+
+<!-- ===== SCROLL TO TOP ===== -->
+<button id="scroll-top" class="scroll-top hidden" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<!-- ===== MODALS ===== -->
+
+<!-- Auth Modal -->
+<div id="modal-auth" class="modal-overlay hidden">
+  <div class="modal glass">
+    <button class="modal-close" onclick="Modal.close('auth')">✕</button>
+    <div id="auth-tabs" class="auth-tabs">
+      <button class="tab-btn active" onclick="Auth.showTab('login')" data-i18n="login">ورود</button>
+      <button class="tab-btn" onclick="Auth.showTab('register')" data-i18n="register">ثبت‌نام</button>
+    </div>
+    <!-- Login Form -->
+    <div id="login-form" class="auth-form">
+      <h3 data-i18n="loginToAccount">ورود به حساب</h3>
+      <input id="login-email" type="email" class="input" data-i18n-placeholder="email" placeholder="ایمیل" />
+      <input id="login-password" type="password" class="input mt-1" data-i18n-placeholder="password" placeholder="رمز عبور" />
+      <button class="btn btn-primary w-full mt-2" onclick="Auth.login()" data-i18n="login">ورود</button>
+      <button class="btn btn-outline w-full mt-1" onclick="Auth.loginAsGuest()" data-i18n="loginAsGuest">👤 ورود به عنوان مهمان</button>
+      <div class="auth-links">
+        <a href="#" onclick="Auth.showForgot()" data-i18n="forgotPassword">فراموشی رمز عبور</a>
+      </div>
+    </div>
+    <!-- Register Form -->
+    <div id="register-form" class="auth-form hidden">
+      <h3 data-i18n="registerNew">ثبت‌نام</h3>
+      <div class="role-select">
+        <button class="role-btn active" data-role="designer" onclick="Auth.selectRole('designer')">👨‍🎨 <span data-i18n="designer">طراح</span></button>
+        <button class="role-btn" data-role="printer" onclick="Auth.selectRole('printer')">🖨️ <span data-i18n="printer">چاپخانه</span></button>
+      </div>
+      <input id="reg-name" type="text" class="input mt-2" data-i18n-placeholder="fullName" placeholder="نام کامل" />
+      <input id="reg-email" type="email" class="input mt-1" data-i18n-placeholder="email" placeholder="ایمیل" />
+      <input id="reg-phone" type="tel" class="input mt-1" data-i18n-placeholder="phone" placeholder="شماره تماس (الزامی)" required />
+      <input id="reg-password" type="password" class="input mt-1" data-i18n-placeholder="password" placeholder="رمز عبور" />
+      <input id="reg-confirm" type="password" class="input mt-1" data-i18n-placeholder="confirmPassword" placeholder="تکرار رمز عبور" />
+      <button class="btn btn-primary w-full mt-2" onclick="Auth.register()" data-i18n="register">ثبت‌نام</button>
+    </div>
+    <!-- Forgot Password -->
+    <div id="forgot-form" class="auth-form hidden">
+      <h3 data-i18n="forgotPassword">بازیابی رمز عبور</h3>
+      <input id="forgot-email" type="email" class="input" data-i18n-placeholder="email" placeholder="ایمیل" />
+      <button class="btn btn-primary w-full mt-2" onclick="Auth.resetPassword()" data-i18n="sendResetLink">ارسال لینک بازیابی</button>
+      <button class="btn btn-ghost w-full mt-1" onclick="Auth.showTab('login')" data-i18n="back">بازگشت</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cart Modal -->
+<div id="modal-cart" class="modal-overlay hidden">
+  <div class="modal modal-lg glass">
+    <button class="modal-close" onclick="Modal.close('cart')">✕</button>
+    <h3 data-i18n="cart">سبد خرید</h3>
+    <div id="cart-items"></div>
+    <div class="cart-footer">
+      <div class="cart-total"><span data-i18n="total">جمع کل</span>: <span id="cart-total">۰</span> <span data-i18n="toman">تومان</span></div>
+      <button class="btn btn-primary" onclick="Cart.checkout()" data-i18n="payAndOrder">پرداخت و ثبت سفارش</button>
+    </div>
+  </div>
+</div>
+
+<!-- Checkout Modal -->
+<div id="modal-checkout" class="modal-overlay hidden">
+  <div class="modal glass">
+    <button class="modal-close" onclick="Modal.close('checkout')">✕</button>
+    <h3 id="checkout-modal-title">تکمیل سفارش</h3>
+    <input id="checkout-name" type="text" class="input" placeholder="نام و نام خانوادگی" />
+    <input id="checkout-phone" type="tel" class="input mt-1" placeholder="شماره تماس (الزامی)" required />
+    <textarea id="checkout-address" class="input mt-1" rows="3" placeholder="آدرس تحویل (اختیاری)"></textarea>
+    <p id="checkout-disclaimer" style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.6rem;line-height:1.7">
+      پس از ارسال، سفارش شما برای بررسی به ادمین فرستاده می‌شود. در صورت تأیید، از طریق پیام‌رسانی که ادمین انتخاب می‌کند با شما تماس گرفته خواهد شد.
+    </p>
+    <button id="checkout-submit-btn" class="btn btn-primary w-full mt-2" onclick="Cart.submitOrder()">ارسال درخواست سفارش</button>
+  </div>
+</div>
+
+<!-- Receipt Modal -->
+<div id="modal-receipt" class="modal-overlay hidden">
+  <div class="modal glass">
+    <button class="modal-close" onclick="Modal.close('receipt')">✕</button>
+    <div id="receipt-content"></div>
+    <button id="receipt-print-btn" class="btn btn-outline mt-2" onclick="window.print()">🖨️ چاپ رسید</button>
+  </div>
+</div>
+
+<!-- Design Detail Modal -->
+<div id="modal-design" class="modal-overlay hidden">
+  <div class="modal modal-xl glass">
+    <button class="modal-close" onclick="Modal.close('design')">✕</button>
+    <div id="design-detail-content"></div>
+  </div>
+</div>
+
+<!-- Upload Design Modal -->
+<div id="modal-upload" class="modal-overlay hidden">
+  <div class="modal glass">
+    <button class="modal-close" onclick="Modal.close('upload')">✕</button>
+    <h3>آپلود طرح جدید</h3>
+    <input id="design-title" type="text" class="input" placeholder="عنوان طرح" />
+    <select id="design-category" class="input select mt-1"><option value="">دسته‌بندی</option></select>
+    <input id="design-price" type="number" class="input mt-1" placeholder="قیمت (تومان)" />
+    <textarea id="design-desc" class="input mt-1" rows="3" placeholder="توضیحات"></textarea>
+    <input id="design-tags" type="text" class="input mt-1" placeholder="تگ‌ها (با ویرگول جدا کنید)" />
+    <label class="label mt-2">فایل اصلی (PSD/AI/EPS/PDF - حداکثر ۲۰MB)</label>
+    <input id="design-file" type="file" class="input" accept=".psd,.ai,.eps,.pdf" />
+    <label class="label mt-1">تصویر پیش‌نمایش (JPG/PNG)</label>
+    <input id="design-thumbnail" type="file" class="input" accept="image/*" />
+    <div id="upload-progress" class="hidden">
+      <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+    </div>
+    <button class="btn btn-primary w-full mt-2" onclick="Marketplace.uploadDesign()">آپلود طرح</button>
+  </div>
+</div>
+
+<!-- Blog Post Modal -->
+<div id="modal-blog" class="modal-overlay hidden">
+  <div class="modal modal-lg glass">
+    <button class="modal-close" onclick="Modal.close('blog')">✕</button>
+    <div id="blog-post-content"></div>
+  </div>
+</div>
+
+<!-- Portfolio Item Add/Edit Modal -->
+<div id="modal-portfolio-item" class="modal-overlay hidden">
+  <div class="modal glass">
+    <button class="modal-close" onclick="Modal.close('portfolio-item')">✕</button>
+    <h3 id="portfolio-item-modal-title">افزودن نمونه‌کار</h3>
+    <input id="portfolio-item-id" type="hidden" value="" />
+    <label id="portfolio-item-category-label" class="label mt-2">دسته‌بندی</label>
+    <select id="portfolio-item-category" class="input select"></select>
+    <label id="portfolio-item-title-label" class="label mt-1">عنوان</label>
+    <input id="portfolio-item-title" type="text" class="input" placeholder="مثال: لوگو رستوران زیتون" />
+    <label id="portfolio-item-desc-label" class="label mt-1">توضیحات</label>
+    <textarea id="portfolio-item-desc" class="input" rows="3" placeholder="توضیح کوتاهی درباره این کار..."></textarea>
+    <label id="portfolio-item-image-label" class="label mt-1">تصویر</label>
+    <div id="portfolio-item-preview-wrap" class="hidden" style="margin-bottom:0.5rem">
+      <img id="portfolio-item-preview" style="width:100%;max-height:180px;object-fit:cover;border-radius:var(--radius)" />
+    </div>
+    <input id="portfolio-item-file" type="file" class="input" accept="image/*" />
+    <button id="portfolio-item-save-btn" class="btn btn-primary w-full mt-2" onclick="Portfolio.saveItem()">ذخیره</button>
+  </div>
+</div>
+
+<!-- Supabase CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- App Scripts (order matters) -->
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/marketplace.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/portfolio.js"></script>
+<script src="js/app.js"></script>
+<script src="js/nash-agents.js"></script>
+</body>
+</html>
