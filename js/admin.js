@@ -194,6 +194,36 @@ const Admin = {
         </div>
       </div>
     `;
+          <!-- Content Agent Settings -->
+          <div class="dash-card glass">
+            <h4 style="margin-bottom:1rem">🤖 ${State.lang==='fa' ? 'تنظیمات Content Agent' : 'Content Agent Settings'}</h4>
+            <label class="label">${State.lang==='fa' ? 'URL پیش‌فرض سایت منبع' : 'Default source site URL'}</label>
+            <input id="content-agent-source" type="url" class="input" placeholder="https://example.com" />
+            <label class="label mt-1">${State.lang==='fa' ? 'حالت پردازش' : 'Processing mode'}</label>
+            <select id="content-agent-mode" class="input select">
+              <option value="translate">🌐 ${t('translate')}</option>
+              <option value="rewrite">✍️ ${t('rewrite')}</option>
+              <option value="summarize">📝 ${t('summarize')}</option>
+            </select>
+            <label class="label mt-1">${State.lang==='fa' ? 'زمان‌بندی (ساعت:دقیقه، جدا با کاما)' : 'Schedule (HH:MM, comma-separated)'}</label>
+            <input id="content-agent-schedule" type="text" class="input" placeholder="09:00,15:30" />
+            <div style="display:flex;gap:0.5rem;margin-top:0.75rem;align-items:center">
+              <label style="display:flex;align-items:center;gap:8px"><input id="content-agent-enabled" type="checkbox" /> فعال</label>
+              <button class="btn btn-primary btn-sm" onclick="Admin.saveContentAgentSettings()">💾 ${t('save')}</button>
+            </div>
+            <p style="font-size:0.8rem;color:var(--text-secondary);margin-top:0.5rem">${State.lang==='fa' ? 'وقتی فعال باشد، مرورگر ادمین در زمان‌های مشخص اسکن و پردازش را اجرا می‌کند. برای اجرای بدون نیاز به مرورگر، از Supabase Edge Function یا cron سروری استفاده کنید.' : 'When enabled, the admin browser will run scheduled scans. For always-on execution use a Supabase Edge Function or server cron.'}</p>
+          </div>
+      `;
+      // populate fields from DB
+      try {
+        const { data: sets } = await supabase.from('settings').select('*').in('key',['content_agent_source','content_agent_mode','content_agent_schedule','content_agent_enabled']);
+        (sets||[]).forEach(s => {
+          if (s.key==='content_agent_source') document.getElementById('content-agent-source').value = s.value || '';
+          if (s.key==='content_agent_mode')   document.getElementById('content-agent-mode').value   = s.value || 'rewrite';
+          if (s.key==='content_agent_schedule')document.getElementById('content-agent-schedule').value= s.value || '';
+          if (s.key==='content_agent_enabled') document.getElementById('content-agent-enabled').checked = (s.value === 'true');
+        });
+      } catch {}
   },
 
   async saveClaudeKey() {
@@ -245,6 +275,20 @@ const Admin = {
       Admin.renderMedia();
     } catch (err) { toast(err.message, 'error'); }
     finally { showLoading(false); }
+  },
+
+  async saveContentAgentSettings() {
+    const source = document.getElementById('content-agent-source')?.value.trim() || '';
+    const mode   = document.getElementById('content-agent-mode')?.value || 'rewrite';
+    const sched  = document.getElementById('content-agent-schedule')?.value.trim() || '';
+    const enabled= document.getElementById('content-agent-enabled')?.checked ? 'true' : 'false';
+    try {
+      await DB.upsert('settings', { key:'content_agent_source', value: source }, 'key');
+      await DB.upsert('settings', { key:'content_agent_mode', value: mode }, 'key');
+      await DB.upsert('settings', { key:'content_agent_schedule', value: sched }, 'key');
+      await DB.upsert('settings', { key:'content_agent_enabled', value: enabled }, 'key');
+      toast(t('saveSuccess'), 'success');
+    } catch (err) { toast(err.message, 'error'); }
   },
 
   async removeBanner() {
@@ -722,6 +766,7 @@ const Admin = {
       images = data || [];
     } catch {}
 
+    // Support color counts 1..10 and per-color sample image + price
     const colorLabels = {
       1: t('oneColor'), 2: t('twoColor'), 3: t('threeColor'), 4: t('fullColor')
     };
@@ -733,18 +778,21 @@ const Admin = {
         ${t('sampleImageDesc')}
       </p>
       <div class="category-samples-grid">
-        ${[1,2,3,4].map(cc => {
+        ${[1,2,3,4,5,6,7,8,9,10].map(cc => {
           const existing = images.find(img => img.color_count === cc);
+          const label = colorLabels[cc] || (cc + ' ' + t('colors'));
           return `
             <div class="dash-card glass">
-              <h4 style="margin-bottom:0.75rem">${colorLabels[cc]}</h4>
+              <h4 style="margin-bottom:0.5rem">${label}</h4>
               ${existing ? `
-                <img src="${existing.image_url}" alt="${colorLabels[cc]}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--radius);margin-bottom:0.75rem" />
+                <img src="${existing.image_url}" alt="${label}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--radius);margin-bottom:0.5rem" />
               ` : `
-                <div style="width:100%;aspect-ratio:4/3;background:var(--bg-secondary);border-radius:var(--radius);margin-bottom:0.75rem;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:0.85rem">
+                <div style="width:100%;aspect-ratio:4/3;background:var(--bg-secondary);border-radius:var(--radius);margin-bottom:0.5rem;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:0.85rem">
                   ${t('noImage')}
                 </div>
               `}
+              <label class="label" style="margin-bottom:0.25rem">${t('samplePriceLabel')}</label>
+              <input id="sample-price-${cc}" type="number" class="input" placeholder="مثال: 20000" value="${existing?.price||''}" style="margin-bottom:0.5rem" />
               <input type="file" id="sample-file-${cc}" class="input" accept="image/*" style="margin-bottom:0.5rem" />
               <div style="display:flex;gap:0.5rem">
                 <button class="btn btn-primary btn-sm" style="flex:1" onclick="Admin.uploadCategorySample(${cc})">${t('upload')}</button>
@@ -754,7 +802,38 @@ const Admin = {
           `;
         }).join('')}
       </div>
+
+      <div style="margin-top:1rem">
+        <h4 style="margin-bottom:0.5rem">⚙️ ${t('execMethodPricesTitle')}</h4>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+          <div style="flex:1;min-width:160px">
+            <label class="label">اجرا</label>
+            <input id="exec-price-exec" type="number" class="input" placeholder="قیمت اجرا" />
+          </div>
+          <div style="flex:1;min-width:160px">
+            <label class="label">اتود</label>
+            <input id="exec-price-etude" type="number" class="input" placeholder="قیمت اتود" />
+          </div>
+          <div style="flex:1;min-width:160px">
+            <label class="label">ویرایش</label>
+            <input id="exec-price-edit" type="number" class="input" placeholder="قیمت ویرایش" />
+          </div>
+        </div>
+        <div style="margin-top:0.75rem;display:flex;gap:0.5rem">
+          <button class="btn btn-success btn-sm" onclick="Admin.saveExecPrices()">💾 ${t('save')}</button>
+          <button class="btn btn-ghost btn-sm" onclick="Admin.renderCategories()">${t('cancel')}</button>
+        </div>
+      </div>
     `;
+
+    // populate exec price inputs from DB
+    try {
+      const { data: execs } = await supabase.from('category_exec_prices').select('*').eq('category_id', categoryId);
+      (execs||[]).forEach(e => {
+        const el = document.getElementById(`exec-price-${e.method}`);
+        if (el) el.value = e.price || '';
+      });
+    } catch {}
   },
 
   async uploadCategorySample(colorCount) {
@@ -769,11 +848,13 @@ const Admin = {
       const ext = file.name.split('.').pop();
       const path = `${categoryId}/color-${colorCount}.${ext}`;
       const url = await DB.uploadFile('category-samples', path, file);
+      const price = parseFloat(document.getElementById(`sample-price-${colorCount}`)?.value) || 0;
 
       await DB.upsert('category_color_images', {
         category_id: categoryId,
         color_count: colorCount,
-        image_url: url
+        image_url: url,
+        price
       }, 'category_id,color_count');
 
       toast(t('saveSuccess'), 'success');
@@ -788,6 +869,20 @@ const Admin = {
       await DB.delete('category_color_images', id);
       toast(t('deleteSuccess'), 'success');
       Admin.openCategorySamples(Admin._sampleCategoryId);
+    } catch (err) { toast(err.message, 'error'); }
+  },
+
+  async saveExecPrices() {
+    const categoryId = Admin._sampleCategoryId;
+    if (!categoryId) return;
+    const execs = ['exec','etude','edit'];
+    try {
+      for (const m of execs) {
+        const val = parseFloat(document.getElementById(`exec-price-${m}`)?.value) || 0;
+        await DB.upsert('category_exec_prices', { category_id: categoryId, method: m, price: val }, 'category_id,method');
+      }
+      toast(t('saveSuccess'), 'success');
+      Admin.openCategorySamples(categoryId);
     } catch (err) { toast(err.message, 'error'); }
   },
 
