@@ -340,6 +340,8 @@ const Dashboard = {
     Dashboard.updateBasePrice();
     Dashboard._currentMainCatId = mainId || null;
     Dashboard.updateCategorySample();
+    // load execution-method prices for this category (admin-set)
+    if (Dashboard._currentMainCatId) Dashboard.loadExecPrices(Dashboard._currentMainCatId);
     if (!mainId) return;
     try {
       const { data } = await supabase.from('categories').select('*').eq('parent_id', mainId).order('name');
@@ -357,11 +359,19 @@ const Dashboard = {
     Dashboard.updateBasePrice();
     Dashboard.updateCategorySample();
     if (!typeId) return;
+    // For print products we expose three execution modes: اجرا, اتود, ویرایش
+    // Admin can later map specific prices to these modes via DB if needed.
     try {
-      const { data } = await supabase.from('categories').select('*').eq('parent_id', typeId).order('name');
+      const execOptions = [
+        { value: 'exec',  label: 'اجرا',    price: 0 },
+        { value: 'etude', label: 'اتود',    price: 0 },
+        { value: 'edit',  label: 'ویرایش', price: 0 }
+      ];
       execSel.innerHTML = `<option value="">${t('selectOption')}</option>` +
-        (data||[]).map(c => `<option value="${c.id}" data-price="${c.base_price||0}">${c.name}</option>`).join('');
-    } catch {}
+        execOptions.map(o => `<option value="${o.value}" data-price="${o.price}">${o.label}</option>`).join('');
+    } catch (e) {
+      console.warn('Failed to set exec-method options', e);
+    }
   },
 
   async onExecMethodChange() {
@@ -370,13 +380,34 @@ const Dashboard = {
     if (!colorSel) return;
     Dashboard.updateBasePrice();
     Dashboard.updateCategorySample();
-    // Standard color options
-    colorSel.innerHTML = `
-      <option value="1">${t('oneColor')}</option>
-      <option value="2">${t('twoColor')}</option>
-      <option value="3">${t('threeColor')}</option>
-      <option value="4">${t('fullColor')}</option>
-    `;
+    // Populate color count 1..10 (includes short labels for common counts)
+    const maxColors = 10;
+    let opts = ['<option value="">' + t('selectOption') + '</option>'];
+    for (let i = 1; i <= maxColors; i++) {
+      let label = i.toString();
+      if (i === 1) label = t('oneColor');
+      else if (i === 2) label = t('twoColor');
+      else if (i === 3) label = t('threeColor');
+      else if (i === 4) label = t('fullColor');
+      opts.push(`<option value="${i}" data-price="0">${label}</option>`);
+    }
+    colorSel.innerHTML = opts.join('');
+  },
+
+  async loadExecPrices(categoryId) {
+    if (!categoryId) return;
+    try {
+      const { data } = await supabase.from('category_exec_prices').select('*').eq('category_id', categoryId);
+      const map = (data||[]).reduce((acc, r) => { acc[r.method] = parseFloat(r.price||0); return acc; }, {});
+      const execSel = document.getElementById('exec-method');
+      if (!execSel) return;
+      for (let i=0;i<execSel.options.length;i++) {
+        const opt = execSel.options[i];
+        const val = opt.value;
+        if (val && map[val] !== undefined) opt.setAttribute('data-price', map[val]);
+      }
+      Dashboard.updateBasePrice();
+    } catch (e) { console.warn('loadExecPrices failed', e); }
   },
 
   async onColorCountChange() {
@@ -402,7 +433,7 @@ const Dashboard = {
     try {
       const { data } = await supabase
         .from('category_color_images')
-        .select('image_url')
+        .select('image_url,price')
         .eq('category_id', mainCatId)
         .eq('color_count', parseInt(colorCount))
         .single();
@@ -410,6 +441,12 @@ const Dashboard = {
       if (data?.image_url) {
         img.src = data.image_url;
         box.classList.remove('hidden');
+        // if a price is provided for this color count, apply it to the color-count option
+        const colorSel = document.getElementById('color-count');
+        if (colorSel) {
+          const opt = Array.from(colorSel.options).find(o => o.value == String(colorCount));
+          if (opt && data.price !== undefined) opt.setAttribute('data-price', data.price);
+        }
       } else {
         box.classList.add('hidden');
         img.src = '';
@@ -423,7 +460,7 @@ const Dashboard = {
   updateBasePrice() {
     // Collect selected options' prices
     let total = 0;
-    ['main-cat','product-type','exec-method'].forEach(id => {
+    ['main-cat','product-type','exec-method','color-count'].forEach(id => {
       const sel = document.getElementById(id);
       if (sel?.value) {
         const opt = sel.options[sel.selectedIndex];
