@@ -746,7 +746,68 @@
       const origUH=typeof App!=='undefined'?App.updateHeader?.bind(App):null;
       if (origUH) App.updateHeader=function(){origUH();syncBtn();};
     }
-    return {init, syncBtn};
+    return {init, syncBtn, scan, process};
+  })();
+
+  /* ════════════════════════════════════════════════════════
+     SCHEDULE: run Content agent based on admin settings
+     (client-side scheduler — runs when an admin has the site open)
+  ════════════════════════════════════════════════════════ */
+  Content._scheduler = (() => {
+    let lastRuns = {}; // key: timestr -> YYYY-MM-DD
+    async function loadSettings() {
+      try {
+        const res = await fetch(`${SB_URL}/rest/v1/settings?select=key,value&key=in.(content_agent_enabled,content_agent_schedule,content_agent_source,content_agent_mode)`, {
+          headers: { apikey: SB_ANON, Authorization: `Bearer ${SB_ANON}` }
+        });
+        if (!res.ok) return {};
+        const rows = await res.json();
+        const map = {};
+        (rows||[]).forEach(r => map[r.key]=r.value);
+        return map;
+      } catch { return {}; }
+    }
+
+    function matchesNow(spec) {
+      if (!spec) return false;
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2,'0');
+      const mm = String(now.getMinutes()).padStart(2,'0');
+      const cur = `${hh}:${mm}`;
+      const parts = spec.split(',').map(s=>s.trim()).filter(Boolean);
+      return parts.includes(cur);
+    }
+
+    async function tick() {
+      try {
+        const s = await loadSettings();
+        if (!s.content_agent_enabled || s.content_agent_enabled !== 'true') return;
+        const sched = s.content_agent_schedule || '';
+        if (!matchesNow(sched)) return;
+        // avoid running multiple times in the same day-minute
+        const key = sched + '|' + new Date().toISOString().slice(0,16); // YYYY-MM-DDTHH:MM
+        if (lastRuns[key]) return;
+        lastRuns[key] = true;
+        // set source and mode into UI and run scan+process
+        if (s.content_agent_source) document.getElementById('na-c-url').value = s.content_agent_source;
+        if (s.content_agent_mode)   document.getElementById('na-c-mode').value = s.content_agent_mode;
+        // open panel for visual feedback
+        document.getElementById('na-c-panel')?.classList.add('na-open');
+        log('اجرای زمان‌بندی‌شده: شروع اسکن و پردازش');
+        if (typeof Content.scan === 'function') await Content.scan();
+        if (typeof Content.process === 'function') await Content.process();
+        log('اجرای زمان‌بندی‌شده: پایان', 'ok');
+      } catch (e) { console.warn('Content scheduler error', e); }
+    }
+
+    function start() {
+      // check every 30 seconds
+      setInterval(tick, 30*1000);
+      // also run one immediate tick shortly after init
+      setTimeout(tick, 5000);
+    }
+
+    return { start };
   })();
 
   /* ════════════════════════════════════════════════════════
@@ -769,6 +830,8 @@
     s.textContent=CSS; document.head.appendChild(s);
     Support.init();
     Content.init();
+    // start client-side scheduler (executes only if admin enabled in settings)
+    try { Content._scheduler.start(); } catch (e) { console.warn('Scheduler not started', e); }
     hookCart();
     window.NashSupport = Support;
     window.NashContent = Content;
