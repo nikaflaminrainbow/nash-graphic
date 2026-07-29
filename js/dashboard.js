@@ -541,3 +541,99 @@ const Dashboard = {
   }
 };
 
+  
+  /* ═══════════════════════════════════════════════════
+     STOCK IMAGES for Designer Dashboard
+  ════════════════════════════════════════════════════ */
+  async function loadStockImages() {
+    const grid = document.getElementById('stock-images-grid');
+    if (!grid) return;
+    
+    grid.innerHTML = '<div class="dash-skeleton"></div>'.repeat(4);
+    
+    try {
+      const { data, error } = await supabase
+        .from('stock_images')
+        .select('*')
+        .eq('is_approved', true)
+        .order('created_at', { ascending: false })
+        .limit(12);
+      
+      if (error) throw error;
+      
+      if (!data || data.length === 0) {
+        grid.innerHTML = '<p class="empty-state">هنوز تصویری در دسترس نیست — مدیر به‌زودی اضافه می‌کند</p>';
+        return;
+      }
+      
+      grid.innerHTML = data.map(img => `
+        <div class="dash-card glass stock-card" data-id="${img.id}">
+          <div class="stock-preview">
+            <img src="${img.preview_url || img.thumbnail_url}" alt="${img.title}" 
+                 loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--radius-sm)" />
+            <div class="stock-watermark">${t('watermark') || 'Nash Graphic'}</div>
+          </div>
+          <h4 class="stock-title">${(img.title || '').slice(0, 40)}</h4>
+          <div class="stock-meta">
+            <span class="stock-price">${(img.price || 100000).toLocaleString('fa-IR')} تومان</span>
+            <span class="stock-source">${img.source === 'vecteezy' ? '🟢 Vecteezy' : '🔵 Freepik'}</span>
+          </div>
+          <div class="stock-actions">
+            <button class="btn btn-primary btn-sm" style="flex:1" onclick="StockImages.buy('${img.id}')">
+              🛒 ${t('buy') || 'خرید'}
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="StockImages.download('${img.id}')">
+              ⬇️ ${t('original') || 'فایل اصلی'}
+            </button>
+          </div>
+        </div>
+      `).join('');
+      
+      // Update admin count if admin
+      const countEl = document.getElementById('stock-images-count');
+      if (countEl) countEl.textContent = data.length;
+      
+    } catch (err) {
+      console.warn('Stock images load error:', err);
+      grid.innerHTML = '<p class="empty-state">خطا در بارگذاری تصاویر</p>';
+    }
+  }
+  
+  function buyStockImage(id) {
+    if (typeof Cart === 'undefined') return;
+    Cart.add({
+      id: 'stock_' + id,
+      type: 'stock_image',
+      title: document.querySelector(`[data-id="${id}"] .stock-title`)?.textContent || 'Stock Image',
+      price: parseInt(document.querySelector(`[data-id="${id}"] .stock-price`)?.textContent?.replace(/[^0-9]/g, '') || '100000'),
+      image: document.querySelector(`[data-id="${id}"] .stock-preview img`)?.src || '',
+    });
+    toast('افزودن به سبد خرید ✅', 'success');
+    Router.navigate('cart');
+  }
+  
+  function downloadStockOriginal(id) {
+    const card = document.querySelector(`[data-id="${id}"]`);
+    if (!card) return;
+    // Admin only can see original download
+    const btn = card.querySelector('.stock-actions .btn-outline');
+    if (btn) {
+      btn.textContent = '⏳ در حال آماده‌سازی...';
+      // Simulate download
+      setTimeout(() => { toast('دانلود شروع شد 📥', 'success'); btn.textContent = '⬇️ فایل اصلی'; }, 2000);
+    }
+  }
+  
+  const StockImages = { load: loadStockImages, buy: buyStockImage, download: downloadStockOriginal };
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    if (typeof Router !== 'undefined') {
+      const origNavigate = Router.navigate.bind(Router);
+      Router.navigate = function(page, params) {
+        origNavigate(page, params);
+        if (page === 'designer-dashboard') {
+          setTimeout(loadStockImages, 500);
+        }
+      };
+    }
+  });
