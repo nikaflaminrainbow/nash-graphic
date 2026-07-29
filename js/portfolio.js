@@ -328,7 +328,7 @@ const Portfolio = {
           designStats.count = designs.length;
           designStats.avgRating = designs.reduce((s,d)=>s+(d.avg_rating||0),0) / designs.length;
         }
-      } catch {}
+      } catch (err) { console.warn(err); }
 
       const canEdit = State.user && (State.user.id === designerId || State.user.role === 'admin');
 
@@ -400,4 +400,3 @@ const Portfolio = {
   }
 };
 
-console.log('✅ portfolio.js loaded');

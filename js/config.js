@@ -8,7 +8,7 @@
 const SUPABASE_URL  = 'https://yeuyhsbzbrjxrxdulaiq.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlldXloc2J6YnJqeHJ4ZHVsYWlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3Nzk1MTksImV4cCI6MjA5NzM1NTUxOX0.kFMQXIw4BKqNyvNmnWChXQhYjBAnXTCl_VYw18Lgswc';
 
-var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ─── I18N DICTIONARY ─────────────────────────────────────────
 const i18n = {
@@ -588,6 +588,9 @@ function applyTheme(theme, customCssUrl = null) {
 const Router = {
   current: 'home',
   navigate(page) {
+    // Close mobile menu on navigation
+    const mobileNav = document.getElementById('mobile-nav');
+    if (mobileNav) mobileNav.classList.add('hidden');
     // Hide all pages
     document.querySelectorAll('.page').forEach(p => {
       p.classList.remove('active');
@@ -730,6 +733,7 @@ function resetActivityTimer() {
   clearTimeout(_activityTimer);
   _activityTimer = setTimeout(async () => {
     if (State.user) {
+      supabase.removeAllChannels();
       await supabase.auth.signOut();
       State.user = null;
       State.isGuest = false;
@@ -744,4 +748,3 @@ function resetActivityTimer() {
 );
 resetActivityTimer();
 
-console.log('✅ config.js loaded');

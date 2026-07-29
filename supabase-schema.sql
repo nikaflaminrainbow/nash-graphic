@@ -28,6 +28,7 @@ create table if not exists public.categories (
   parent_id   uuid references public.categories(id) on delete set null,
   base_price  numeric default 0,
   image_url   text,
+  description text,
   created_at  timestamptz default now()
 );
 
@@ -183,6 +184,8 @@ create table if not exists public.blog (
   content    text,
   excerpt    text,
   author_id  uuid references public.users(id) on delete set null,
+  image_url  text,
+  source_url text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

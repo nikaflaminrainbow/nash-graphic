@@ -36,7 +36,7 @@ const Marketplace = {
         dSel.innerHTML = `<option value="">${t('selectCategory')}</option>` +
           data.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
       }
-    } catch {}
+    } catch (err) { console.warn(err); }
   },
 
   // ─── LOAD DESIGNS ──────────────────────────────────────────
@@ -160,7 +160,7 @@ const Marketplace = {
       let purchased = false;
       if (State.user) {
         const { data: ord } = await supabase.from('orders')
-          .select('items').eq('user_id', State.user.id).eq('status', 'pending');
+          .select('items').eq('user_id', State.user.id).in('status', ['contacted', 'processing', 'shipped', 'delivered']);
         // simplified check: look through orders
         if (ord) {
           purchased = ord.some(o => JSON.stringify(o.items).includes(designId));
@@ -187,7 +187,7 @@ const Marketplace = {
               : `<div class="design-detail-img" style="display:flex;align-items:center;justify-content:center;font-size:5rem;background:var(--bg-secondary)">🎨</div>`
             }
             <div style="margin-top:1rem;display:flex;gap:0.75rem;flex-wrap:wrap">
-              <button class="btn btn-primary" onclick="Cart.addDesign(${JSON.stringify(d).replace(/"/g,'&quot;')})">
+              <button class="btn btn-primary" onclick="Marketplace.addDesignToCart('${d.id}')">
                 🛒 ${t('addToCart')}
               </button>
               <button class="btn ${inWishlist ? 'btn-danger' : 'btn-outline'}" onclick="Marketplace.toggleWishlist('${d.id}', this)">
@@ -272,6 +272,16 @@ const Marketplace = {
     const mul = sel.value === 'exclusive' ? 3 : 1;
     const el  = document.getElementById('detail-price-display');
     if (el) el.textContent = formatPrice(basePrice * mul);
+  },
+  // ─── ADD DESIGN TO CART (reads license selector) ─────────
+  addDesignToCart(designId) {
+    const design = Marketplace._designs.find(d => d.id === designId) ||
+                   Marketplace._filtered.find(d => d.id === designId);
+    if (!design) return;
+    const licenseSel = document.querySelector('#modal-design .input.select, #modal-design select');
+    const licenseType = licenseSel ? licenseSel.value : 'standard';
+    const price = licenseType === 'exclusive' ? design.price * 3 : design.price;
+    Cart.addDesign({ ...design, price }, licenseType);
   },
 
   // ─── STAR RATING ───────────────────────────────────────────
@@ -448,4 +458,3 @@ const Marketplace = {
   }
 };
 
-console.log('✅ marketplace.js loaded');

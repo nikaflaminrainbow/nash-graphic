@@ -165,7 +165,7 @@ const Dashboard = {
           </div>
         </div>
       `).join('');
-    } catch {}
+    } catch (err) { console.warn(err); }
   },
 
   // ─── Edit designer's own design ────────────────────────────
@@ -327,7 +327,7 @@ const Dashboard = {
       if (!sel) return;
       sel.innerHTML = `<option value="">${t('selectOption')}</option>` +
         (data || []).map(c => `<option value="${c.id}" data-price="${c.base_price||0}">${c.name}</option>`).join('');
-    } catch {}
+    } catch (err) { console.warn(err); }
   },
 
   async onMainCatChange() {
@@ -345,7 +345,7 @@ const Dashboard = {
       const { data } = await supabase.from('categories').select('*').eq('parent_id', mainId).order('name');
       typeSel.innerHTML = `<option value="">${t('selectOption')}</option>` +
         (data||[]).map(c => `<option value="${c.id}" data-price="${c.base_price||0}">${c.name}</option>`).join('');
-    } catch {}
+    } catch (err) { console.warn(err); }
   },
 
   async onProductTypeChange() {
@@ -367,7 +367,7 @@ const Dashboard = {
         execSel.innerHTML = `<option value="">${t('noExecMethodNeeded')}</option>`;
         await Dashboard._loadColorsFor(typeId);
       }
-    } catch {}
+    } catch (err) { console.warn(err); }
   },
 
   async onExecMethodChange() {
@@ -397,7 +397,7 @@ const Dashboard = {
         colorSel.innerHTML = `<option value="">${t('selectOption')}</option>` +
           [1,2,3,4].map(n => `<option value="${n}" data-extra="0">${n===4 ? t('fullColor') : n + ' ' + t('colorUnit')}</option>`).join('');
       }
-    } catch {}
+    } catch (err) { console.warn(err); }
   },
 
   async onColorCountChange() {
@@ -512,7 +512,7 @@ const Dashboard = {
           </button>
         </div>
       `).join('');
-    } catch {}
+    } catch (err) { console.warn(err); }
   },
 
   // ─── Purchase history (marketplace designs) ───────────────
@@ -537,8 +537,7 @@ const Dashboard = {
           </div>
         </div>
       `).join('');
-    } catch {}
+    } catch (err) { console.warn(err); }
   }
 };
 
-console.log('✅ dashboard.js loaded');

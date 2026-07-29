@@ -370,8 +370,6 @@ body[data-lang="en"] .user-dropdown{right:auto;left:0;}
 .user-dropdown a:hover,.user-dropdown button:hover{background:var(--c-gold-dim);color:var(--c-gold);}
 .user-dropdown .divider{border-top:1px solid var(--c-border);margin:4px 0;}
 
-.mobile-only{display:none!important;}
-
 
 /* ══════════════════════════════════════════════════════════
    BUTTONS — pill system

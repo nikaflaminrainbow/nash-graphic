@@ -228,7 +228,7 @@ const Cart = {
           is_read:    false,
           created_at: new Date().toISOString()
         });
-      } catch {}
+      } catch (err) { console.warn(err); }
 
       // NOTE: sales_count for designs is intentionally NOT incremented here.
       // It only increments once the admin reviews & approves the order
@@ -294,4 +294,3 @@ const Cart = {
   }
 };
 
-console.log('✅ cart.js loaded');

@@ -244,11 +244,21 @@ const Auth = {
         App.updateHeader();
       }
       if (event === 'PASSWORD_RECOVERY') {
-        const newPwd = prompt(State.lang === 'fa' ? 'رمز عبور جدید را وارد کنید:' : 'Enter new password:');
-        if (newPwd) {
-          const { error } = await supabase.auth.updateUser({ password: newPwd });
-          if (error) toast(error.message, 'error');
-          else toast(t('passwordChanged'), 'success');
+        // Show a confirm-based reset: use the forgot form as inline input
+        Auth.showTab('forgot');
+        const forgotH3 = document.querySelector('#forgot-form h3');
+        if (forgotH3) forgotH3.textContent = t('resetPassword');
+        const resetBtn = document.querySelector('#forgot-form .btn-primary');
+        if (resetBtn) {
+          resetBtn.textContent = t('save');
+          resetBtn.onclick = async () => {
+            const newPwd = document.getElementById('forgot-email').value.trim();
+            if (!newPwd) { toast(t('fillRequired'), 'warning'); return; }
+            if (newPwd.length < 6) { toast(State.lang === 'fa' ? 'رمز عبور باید حداقل ۶ کاراکتر باشد' : 'Password must be at least 6 characters', 'warning'); return; }
+            const { error } = await supabase.auth.updateUser({ password: newPwd });
+            if (error) toast(error.message, 'error');
+            else { toast(t('passwordChanged'), 'success'); Auth.showTab('login'); }
+          };
         }
       }
     });
@@ -269,7 +279,7 @@ const Profile = {
     try {
       const { data } = await supabase.from('users').select('*').eq('id', u.id).single();
       if (data?.address) document.getElementById('profile-address').value = data.address;
-    } catch {}
+    } catch (err) { console.warn(err); }
     Profile.translatePage();
     Profile.loadOrders();
     Profile.loadWishlist();
@@ -410,7 +420,7 @@ const Profile = {
           <button class="cart-item-remove" onclick="Profile.removeWishlist('${w.id}')">🗑️</button>
         </div>`;
       }).join('');
-    } catch {}
+    } catch (err) { console.warn(err); }
   },
 
   async removeWishlist(id) {
@@ -508,7 +518,7 @@ const Support = {
           <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.25rem">${formatDate(tk.created_at)}</div>
         </div>
       `).join('');
-    } catch {}
+    } catch (err) { console.warn(err); }
   }
 };
 
@@ -577,4 +587,3 @@ const Tracking = {
   }
 };
 
-console.log('✅ auth.js loaded');

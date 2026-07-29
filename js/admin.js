@@ -125,7 +125,7 @@ const Admin = {
         if (s.key==='banner_url')     currentBanner = s.value||'';
         if (s.key==='gemini_api_key') claudeKey     = s.value||'';
       });
-    } catch {}
+    } catch (err) { console.warn(err); }
 
     el.innerHTML = `
       <h3 style="margin-bottom:1.5rem">📁 ${t('mediaTab')}</h3>
@@ -532,7 +532,7 @@ const Admin = {
           try {
             const { data: d } = await supabase.from('designs').select('sales_count').eq('id', item.id).single();
             await supabase.from('designs').update({ sales_count: (d?.sales_count || 0) + 1 }).eq('id', item.id);
-          } catch {}
+          } catch (err) { console.warn(err); }
         }
       }
 
@@ -720,7 +720,7 @@ const Admin = {
     try {
       const { data } = await supabase.from('category_color_images').select('*').eq('category_id', categoryId);
       images = data || [];
-    } catch {}
+    } catch (err) { console.warn(err); }
 
     const defaultLabel = cc => cc === 4 ? t('fullColor') : `${cc} ${t('colorUnit')}`;
 
@@ -875,7 +875,7 @@ const Admin = {
     try {
       const { data } = await supabase.from('settings').select('value').eq('key','theme').single();
       if (data?.value) currentTheme = data.value;
-    } catch {}
+    } catch (err) { console.warn(err); }
 
     el.innerHTML = `
       <h3 style="margin-bottom:1.5rem">${t('themeManagement')}</h3>
@@ -1262,4 +1262,3 @@ const Admin = {
   }
 };
 
-console.log('✅ admin.js loaded');

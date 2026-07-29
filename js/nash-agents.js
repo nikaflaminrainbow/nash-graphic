@@ -12,8 +12,9 @@
 (function () {
   'use strict';
 
+  // Note: must match config.js
   const SB_URL  = 'https://yeuyhsbzbrjxrxdulaiq.supabase.co';
-  const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlldXloc2J6YnJqeHJ4ZHVsYWlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3Nzk1MTksImV4cCI6MjA5NzM1NTUxOX0.kFMQXIw4BKqNyvNmnWChXQhYjBAnXTCl_VYw18Lgswc';
+  const SB_ANON = 'eyJhbG...gswc';
   const AI_PROXY_URL = `${SB_URL}/functions/v1/ai-proxy`;
 
   /* ── AI caller — از طریق Edge Function proxy ──────────── */
@@ -23,7 +24,7 @@
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${SB_ANON}`,
-        apikey: SB_ANON,
+        apikey: `${SB_ANON}`
       },
       body: JSON.stringify({ system, userMsg, maxTokens }),
     });
@@ -37,9 +38,9 @@
     return data.text || '';
   }
 
-  // برای backward compat — دیگر نیازی به کلید در مرورگر نیست
+  // API key management — AI is called via Supabase Edge Function proxy,
+  // so no browser-side API key is needed.
   const APIKey = { exists: () => true, load: async () => 'proxy', get: () => 'proxy', set: () => {} };
-  const GeminiKey = APIKey;
 
   // wrapper برای Support Chat که history داره
   async function callAIWithHistory({ system, messages }) {
@@ -57,7 +58,7 @@
       const res = await fetch(
         `${SB_URL}/rest/v1/orders?user_id=eq.${uid}&order=created_at.desc&limit=4` +
         `&select=id,tracking_code,status,created_at,final_amount`,
-        { headers: { apikey: SB_ANON, Authorization: `Bearer ${SB_ANON}` } }
+        { headers: { apikey: `${SB_ANON}`, Authorization: `Bearer ${SB_ANON}` } }
       );
       return res.ok ? (await res.json()) : [];
     } catch { return []; }
@@ -576,7 +577,7 @@
         try {
           const url=new URL(a.getAttribute('href'),base).href;
           if (!seen.has(url)&&url.startsWith('http')) { seen.add(url); out.push({url,title:t.slice(0,100)}); }
-        } catch {}
+        } catch (err) { console.warn(err); }
       });
       return out.slice(0,14);
     }
@@ -684,7 +685,7 @@
           const html=await proxyFetch(art.url);
           const {title,content,imageUrl}=extractContent(html, art.url);
           if (!content||content.length<80){log('محتوا ناکافی، رد شد','warn');done++;setProgress(done,toProcess.length);continue;}
-          log(`پردازش با Gemini: ${(title||art.title).slice(0,45)}...`);
+          log(`پردازش با AI: ${(title||art.title).slice(0,45)}...`);
           const processed=await processArticle(title||art.title,content,mode);
           await saveToBlog(processed, imageUrl, art.url);
           done++;setProgress(done,toProcess.length);
@@ -772,7 +773,6 @@
     hookCart();
     window.NashSupport = Support;
     window.NashContent = Content;
-    console.log('✅ nash-agents.js v2 loaded');
   }
 
   if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot);

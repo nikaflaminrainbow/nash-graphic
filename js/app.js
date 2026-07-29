@@ -83,7 +83,6 @@ const App = {
     // 18. Hide loading overlay
     showLoading(false);
 
-    console.log('✅ App initialized');
   },
 
   // ─── LOAD THEME FROM DB ──────────────────────────────────
@@ -101,7 +100,7 @@ const App = {
         const logo = document.getElementById('site-logo');
         if (logo) { logo.src = map.logo_url; logo.style.display = 'block'; }
       }
-    } catch {}
+    } catch (err) { console.warn(err); }
   },
 
   // ─── BUILD NAVIGATION ────────────────────────────────────
@@ -144,7 +143,7 @@ const App = {
     try {
       const { data } = await supabase.from('menu').select('*').order('order_index');
       customItems = data || [];
-    } catch {}
+    } catch (err) { console.warn(err); }
 
     const allItems = [
       ...defaultItems,
@@ -308,7 +307,7 @@ const App = {
       App._animateCount('stat-designers',designers || 0);
       App._animateCount('stat-printers', printers  || 0);
       App._animateCount('stat-designs',  designs   || 0);
-    } catch {}
+    } catch (err) { console.warn(err); }
   },
 
   _animateCount(id, target) {
@@ -424,7 +423,7 @@ const App = {
       const map = {};
       data.forEach(s => map[s.key] = s.value);
       el.textContent = map[`footer_text_${State.lang}`] || (State.lang === 'fa' ? 'پلتفرم تخصصی طراحی و چاپ' : 'Professional Design & Print Platform');
-    } catch {}
+    } catch (err) { console.warn(err); }
 
     // Translate footer links
     const footerLinks = document.querySelectorAll('.footer-links a');
@@ -444,7 +443,7 @@ const App = {
           ? 'نش گرافیک پلتفرم تخصصی طراحی و چاپ در ایران است. ما با اتصال طراحان حرفه‌ای به چاپخانه‌های معتبر، فرایند سفارش و تحویل طرح را ساده و سریع کرده‌ایم.'
           : 'Nash Graphic is Iran\'s professional design and print platform. By connecting professional designers with trusted print shops, we\'ve simplified the design ordering and delivery process.');
       }
-    } catch {}
+    } catch (err) { console.warn(err); }
   },
 
   translateAboutPage() {
@@ -589,9 +588,14 @@ const App = {
     };
 
     try {
-      const { data } = await supabase.from('settings').select('value').eq('key', keyMap[type]).single();
-      el.innerHTML = data?.value || defaults[type];
-    } catch {
+      // Note: legal content is rendered as raw HTML intentionally —
+      // admin-authored legal pages contain formatted HTML (headings, lists, etc.).
+      // This is safe because only the admin can update legal content via the admin panel.
+      const { data } = await supabase.from('legal').select('content_fa, content_en').eq('type', type).single();
+      const content = State.lang === 'fa' ? data?.content_fa : data?.content_en;
+      el.innerHTML = content || defaults[type];
+    } catch (err) {
+      console.warn('loadLegal error:', err);
       el.innerHTML = defaults[type];
     }
   },
@@ -709,9 +713,11 @@ const App = {
     App.loadFooterContent();
     const footerBottom = document.querySelector('.footer-bottom p');
     if (footerBottom) {
+      const year = new Date().getFullYear();
+      const yearFa = toFarsiNum(year);
       footerBottom.textContent = L === 'fa'
-        ? '© ۱۴۰۳ نش گرافیک - تمامی حقوق محفوظ است'
-        : '© 2025 Nash Graphic - All rights reserved';
+        ? `© ${yearFa} نش گرافیک - تمامی حقوق محفوظ است`
+        : `© ${year} Nash Graphic - All rights reserved`;
     }
 
     // ── 404 page ──
@@ -801,7 +807,7 @@ trackingCSS.textContent = `
     right: 10%;
     left: 10%;
     height: 3px;
-    background: var(--border);
+    background: var(--c-border);
   }
   .tracking-step {
     display: flex;
@@ -815,26 +821,26 @@ trackingCSS.textContent = `
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: var(--bg-card);
-    border: 3px solid var(--border);
+    background: var(--c-card);
+    border: 3px solid var(--c-border);
     transition: all 0.3s ease;
   }
   .step-dot.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    box-shadow: 0 0 0 4px var(--accent-light);
+    background: var(--c-gold);
+    border-color: var(--c-gold);
+    box-shadow: 0 0 0 4px var(--c-gold-dim);
   }
   .tracking-step.done .step-dot {
-    background: var(--success);
-    border-color: var(--success);
+    background: var(--c-ok);
+    border-color: var(--c-ok);
   }
   .step-label {
     font-size: 0.78rem;
-    color: var(--text-secondary);
+    color: var(--c-text-2);
     text-align: center;
     max-width: 70px;
   }
-  .tracking-step.done .step-label { color: var(--success); }
+  .tracking-step.done .step-label { color: var(--c-ok); }
 `;
 document.head.appendChild(trackingCSS);
 
@@ -886,4 +892,3 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-console.log('✅ app.js loaded');
