@@ -15,7 +15,8 @@ const Dashboard = {
     await Promise.all([
       Dashboard.loadMyDesigns(),
       Dashboard.loadSalesStats(),
-      Dashboard.loadReceivedOrders()
+      Dashboard.loadReceivedOrders(),
+      Dashboard.loadStockImages()
     ]);
   },
 
@@ -624,7 +625,7 @@ const Dashboard = {
     }
   }
   
-  const StockImages = { load: loadStockImages, buy: buyStockImage, download: downloadStockOriginal };
+  window.StockImages = { load: loadStockImages, buy: buyStockImage, download: downloadStockOriginal };
   
   document.addEventListener('DOMContentLoaded', () => {
     if (typeof Router !== 'undefined') {
