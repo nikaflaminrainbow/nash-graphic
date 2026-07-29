@@ -345,11 +345,36 @@
 
     function treeFallback(text) {
       showTyping();
-      if (/سفارش|خرید/i.test(text))         goNode('order');
-      else if (/پیگیری|وضعیت/i.test(text))  goNode('track');
-      else if (/قیمت|پرداخت/i.test(text))   goNode('pay');
-      else if (/تماس|ادمین/i.test(text))    goNode('contact');
-      else { hideTyping(); addMsg('لطفاً از گزینه‌های زیر انتخاب کن:'); goNode('root'); }
+      if (/سلام|درود|hi\b|hello|hey/i.test(text))
+        { setTimeout(()=>{hideTyping();addMsg('سلام! 👋 خوش اومدی. چطور می‌تونم کمکت کنم؟');renderOpts([{l:'🛒 سفارش',n:'order'},{l:'📦 پیگیری',n:'track'},{l:'💰 قیمت',n:'pay'},{l:'📞 تماس',n:'contact'}]);},400); }
+      else if (/ممنون|متشکر|مرسی|سپاس|thanks/i.test(text))
+        { setTimeout(()=>{hideTyping();addMsg('خواهش می‌کنم! 😊 اگه سوال دیگه‌ای داری، در خدمتم.');renderOpts([{l:'🔙 منوی اصلی',n:'root'}]);},400); }
+      else if (/سفارش|خرید|ثبت سفارش/i.test(text))  goNode('order');
+      else if (/پیگیری|وضعیت|کد پیگیری/i.test(text))  goNode('track');
+      else if (/قیمت|هزینه|چقدر|گرون|ارزان/i.test(text))
+        { setTimeout(()=>{hideTyping();addMsg('💰 قیمت‌ها به عوامل مختلفی بستگی داره:\n• نوع طراحی\n• تعداد رنگ\n• تیراژ چاپ\n\nقیمت دقیق بعد از بررسی سفارش اعلام میشه. از بازارچه قیمت پایه هر دسته رو می‌بینی.');renderOpts([{l:'🛒 نحوه سفارش',n:'order'},{l:'📞 تماس با ادمین',n:'contact'},{l:'🔙 برگشت',n:'root'}]);},400); }
+      else if (/پرداخت|کارت|واریز|نقدی|آنلاین/i.test(text))
+        { setTimeout(()=>{hideTyping();addMsg('💳 روش‌های پرداخت:\n• کارت به کارت\n• پرداخت آنلاین\n• نقدی\n\n⚠️ هیچ مبلغی قبل از تأیید سفارش دریافت نمیشه!');renderOpts([{l:'🛒 نحوه سفارش',n:'order'},{l:'🔙 برگشت',n:'root'}]);},400); }
+      else if (/زمان|تحویل|چند روز|سریع|آماده/i.test(text))
+        { setTimeout(()=>{hideTyping();addMsg('⏱ زمان تحویل:\n• طرح گرافیکی: ۲–۳ روز کاری\n• بسته‌بندی: ۳–۵ روز کاری\n• چاپ ساده: ۳–۷ روز کاری\n• پکیج عمده: ۷–۱۴ روز کاری');renderOpts([{l:'🛒 سفارش',n:'order'},{l:'💰 قیمت',n:'pay'},{l:'🔙 برگشت',n:'root'}]);},400); }
+      else if (/فرمت|فایل|DPI|CMYK|AI|PDF|PSD/i.test(text))
+        { setTimeout(()=>{hideTyping();addMsg('📄 فرمت‌های قابل قبول:\n• اصلی: AI، PDF، PSD، CDR\n• پیش‌نمایش: PNG، JPG (300+ DPI)\n• رنگ: CMYK الزامی\n• حاشیه: حداقل ۳ میلیمتر');renderOpts([{l:'⏱ زمان',n:'time'},{l:'🔙 برگشت',n:'root'}]);},400); }
+      else if (/تماس|ادمین|شماره|تلفن|پشتیبانی/i.test(text))  goNode('contact');
+      else if (/نمونه کار|پورتفولیو|نمونه|محصول/i.test(text))
+        { setTimeout(()=>{hideTyping();addMsg('🎨 نمونه‌کارها:\n• کانال تلگرام: @nash_graphic_team\n• صفحه بازارچه سایت\n• منوی پورتفولیو');renderOpts([{l:'🛒 سفارش',n:'order'},{l:'📞 تماس',n:'contact'},{l:'🔙 برگشت',n:'root'}]);},400); }
+      else if (/طراحی|لوگو|بسته بندی|بسته‌بندی|کارت ویزیت|پوستر/i.test(text))
+        { setTimeout(()=>{hideTyping();addMsg('🎯 خدمات طراحی:\n• لوگو و هویت بصری\n• بسته‌بندی و جعبه\n• کارت ویزیت\n• پوستر و بروشور\n• قالب برش (دای‌کات)\n• آماده‌سازی فایل چاپی');renderOpts([{l:'💰 قیمت',n:'pay'},{l:'📄 فرمت',n:'file'},{l:'🛒 سفارش',n:'order'}]);},400); }
+      else if (/چاپ|چاپخانه|چاپ افست|چاپ دیجیتال|چاپ سیلک/i.test(text))
+        { setTimeout(()=>{hideTyping();addMsg('🖨️ خدمات چاپ:\n• چاپ دیجیتال (تیراژ کم)\n• چاپ افست (تیراژ بالا)\n• چاپ سیلک\n• چاپ بنر و فلکس');renderOpts([{l:'💰 قیمت',n:'pay'},{l:'⏱ زمان',n:'time'},{l:'🔙 برگشت',n:'root'}]);},400); }
+      else if (/شکایت|ناراضی|مشکل|خراب|باگ/i.test(text))
+        { setTimeout(()=>{hideTyping();addMsg('😔 متأسفم. لطفاً تیکت پشتیبانی ثبت کن تا سریعاً بررسی بشه.\n📞 یا با ۰۹۳۵۱۷۶۰۰۵۴ تماس بگیر.');renderOpts([{l:'📝 ثبت تیکت',a:'support'},{l:'📞 تماس',n:'contact'},{l:'🔙 برگشت',n:'root'}]);},400); }
+      else if (/بازگشت|پس گرفتن|refund|برگشت پول/i.test(text))
+        { setTimeout(()=>{hideTyping();addMsg('🔄 سیاست بازگشت:\n• دیجیتال: تا ۴۸ ساعت\n• فیزیکی: تا ۷ روز\n• شرط: مطابق سفارش نباشه');renderOpts([{l:'📝 ثبت تیکت',a:'support'},{l:'🔙 برگشت',n:'root'}]);},400); }
+      else if (/کمک|راهنما|help|ندونستم|بلدم نیست/i.test(text))
+        { setTimeout(()=>{hideTyping();addMsg('🤝 راهنما:\nمن می‌تونم کمکت کنم در:\n• 🛒 نحوه سفارش\n• 📦 پیگیری سفارش\n• 💰 اطلاعات قیمت\n• 📄 فرمت فایل‌ها\n• 📞 تماس با ادمین');renderOpts([{l:'🛒 سفارش',n:'order'},{l:'📦 پیگیری',n:'track'},{l:'💰 قیمت',n:'pay'},{l:'📞 تماس',n:'contact'}]);},400); }
+      else if (/ساعت|زمان کاری|کی هستین|کی بازین|تعطیل/i.test(text))
+        { setTimeout(()=>{hideTyping();addMsg('🕐 ساعت کاری:\n• شنبه تا پنج‌شنبه: ۹ صبح تا ۶ عصر\n• جمعه‌ها تعطیل\n⏰ پاسخگویی تلگرام و تیکت: ۲۴ ساعته');renderOpts([{l:'📞 تماس',n:'contact'},{l:'🔙 برگشت',n:'root'}]);},400); }
+      else { hideTyping(); addMsg('متأسفم، متوجه نشدم. 🤔\nلطفاً از گزینه‌های زیر انتخاب کن:'); goNode('root'); }
     }
 
     /* AI */
@@ -443,11 +468,8 @@
       document.getElementById('na-s-badge').style.display='none';
       const msgs = document.getElementById('na-s-msgs');
       if (!msgs || msgs.children.length > 0) return;
-      // همیشه با AI شروع کن — بدون key prompt
-      useAI = true; showChatUI(); history = [];
-      addMsg(ctx.step==='checkout'
-        ? 'سلام! 👋 می‌بینم که داری سفارش می‌دی. سوالی داری؟'
-        : 'سلام! 👋 به پشتیبانی Nash Graphic خوش اومدی. چطور کمکت کنم؟');
+      // شروع مستقیم با decision tree — بدون AI
+      showChatUI(); goNode('root');
     }
     function closePanel() { isOpen=false; document.getElementById('na-s-panel').classList.remove('na-open'); }
     const togglePanel = () => isOpen ? closePanel() : openPanel();
@@ -457,7 +479,7 @@
       const text = inp.value.trim(); if (!text) return;
       inp.value=''; addMsg(text,'user');
       document.getElementById('na-s-qrs').innerHTML='';
-      if (useAI) aiReply(text); else treeFallback(text);
+      treeFallback(text);
     }
 
     function init() {
@@ -470,14 +492,7 @@
             <button class="na-x-btn" id="na-s-close">✕</button>
           </div>
           <div id="na-s-ctx"><span>📦</span><span id="na-s-ctx-txt"></span></div>
-          <div id="na-key-prompt">
-            <span style="font-size:32px">🔑</span>
-            <p>برای چت با هوش مصنوعی کلید Claude API رو وارد کن<br><small>(از console.anthropic.com بگیر)</small></p>
-            <input id="na-s-key-inp" type="password" placeholder="sk-ant-..." />
-            <button class="na-kp-save" id="na-s-key-save" style="margin-top:8px">✅ فعال‌سازی AI</button>
-            <button class="na-kp-skip" id="na-s-skip" style="margin-top:6px">بدون AI ادامه بده</button>
-          </div>
-          <div id="na-s-chatui">
+          <div id="na-s-chatui" class="na-vis">
             <div class="na-msgs" id="na-s-msgs"></div>
             <div class="na-qrs" id="na-s-qrs"></div>
             <div class="na-inp-row">
@@ -493,11 +508,7 @@
       document.getElementById('na-s-inp').addEventListener('keydown', e => {
         if (e.key==='Enter') { e.preventDefault(); sendUser(); }
       });
-      document.getElementById('na-s-key-save').onclick = () => {
-        const k = document.getElementById('na-s-key-inp').value.trim();
-        if (k) activateAI(k); else alert('کلید را وارد کنید');
-      };
-      document.getElementById('na-s-skip').onclick = activateFallback;
+      // حذف شده — agent بدون AI کار می‌کنه
     }
 
     async function openWithContext({ step, product } = {}) {
