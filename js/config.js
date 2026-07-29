@@ -8,7 +8,7 @@
 const SUPABASE_URL  = 'https://yeuyhsbzbrjxrxdulaiq.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlldXloc2J6YnJqeHJ4ZHVsYWlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3Nzk1MTksImV4cCI6MjA5NzM1NTUxOX0.kFMQXIw4BKqNyvNmnWChXQhYjBAnXTCl_VYw18Lgswc';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ─── I18N DICTIONARY ─────────────────────────────────────────
 const i18n = {
