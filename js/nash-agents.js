@@ -296,14 +296,13 @@
   `;
 
   /* ════════════════════════════════════════════════════════
-     SUPPORT AGENT
+     SUPPORT AGENT  —  Offline / Rule-based  (v5.0)
+     بدون وابستگی به AI — فقط pattern matching
   ════════════════════════════════════════════════════════ */
   const Support = (() => {
     let isOpen = false;
     let history = [];
     let ctx = {};
-    let useAI = false;
-    let skipKey = false;
 
     const STATUS_FA = {
       pending_review:'در انتظار بررسی ⏳', contacted:'ادمین تماس گرفته ✅',
@@ -311,30 +310,302 @@
       delivered:'تحویل شده ✅', cancelled:'لغو شده ❌',
     };
 
-    /* decision tree fallback */
+    /* ── Decision Tree ─────────────────────────────────── */
     const TREE = {
-      root:{msg:'سلام! 👋 به پشتیبانی Nash Graphic خوش اومدی. چطور کمکت کنم؟',
-        opts:[{l:'🛒 فرآیند سفارش',n:'order'},{l:'📦 پیگیری سفارش',n:'track'},
-              {l:'💰 قیمت و پرداخت',n:'pay'},{l:'📞 تماس با ادمین',n:'contact'}]},
-      order:{msg:'فرآیند سفارش:\n۱. طرح رو به سبد اضافه کن\n۲. فرم سفارش رو پر کن\n۳. ادمین بررسی می‌کنه\n۴. از طریق تلگرام/بله/روبیکا تماس می‌گیریم\n۵. پرداخت و ارسال',
-        opts:[{l:'⏱ زمان تحویل',n:'time'},{l:'📄 فایل مورد نیاز',n:'file'},{l:'🔙 برگشت',n:'root'}]},
-      track:{msg:null,dyn:'orders',opts:[{l:'🔙 برگشت',n:'root'}]},
-      pay:{msg:'پرداخت پس از توافق با ادمین انجام میشه.\nروش‌ها: کارت به کارت / آنلاین / نقدی\nهیچ مبلغی قبل از تأیید دریافت نمیشه.',opts:[{l:'🔙 برگشت',n:'root'}]},
-      contact:{msg:'برای تماس مستقیم از صفحه «پشتیبانی» تیکت ثبت کن.\nمعمولاً ۲–۴ ساعت پاسخ داده میشه.',
-        opts:[{l:'📝 ثبت تیکت',a:'support'},{l:'🔙 برگشت',n:'root'}]},
-      time:{msg:'زمان تحویل:\n• طرح گرافیکی: ۲–۵ روز\n• چاپ ساده: ۳–۷ روز\n• پکیج عمده: ۷–۱۴ روز',opts:[{l:'🔙 برگشت',n:'root'}]},
-      file:{msg:'فرمت‌های قابل قبول: AI، PDF، PSD، PNG (300 DPI)\nرنگ: CMYK برای چاپ',opts:[{l:'🔙 برگشت',n:'root'}]},
+      root: {
+        msg: 'سلام! 👋 به پشتیبانی Nash Graphic خوش اومدی.\nچطور می‌تونم کمکت کنم؟',
+        opts: [
+          {l:'🛒 فرآیند سفارش', n:'order'},
+          {l:'📦 پیگیری سفارش', n:'track'},
+          {l:'💰 قیمت و پرداخت', n:'pay'},
+          {l:'🎨 خدمات طراحی', n:'design'},
+          {l:'🖨️ خدمات چاپ', n:'print'},
+          {l:'📸 نمونه کارها', n:'portfolio'},
+          {l:'📞 تماس با ادمین', n:'contact'},
+        ],
+      },
+      order: {
+        msg: '🛒 فرآیند سفارش در Nash Graphic:\n\n' +
+             '۱. طرح مورد نظر رو از پلتفرم انتخاب کن\n' +
+             '۲. به سبد خرید اضافه کن\n' +
+             '۳. فرم سفارش رو پر کن و ثبت کن\n' +
+             '۴. ادمین سفارشت رو بررسی می‌کنه\n' +
+             '۵. از طریق تلگرام / بله / روبیکا باهات تماس می‌گیریم\n' +
+             '۶. بعد از توافق، پرداخت و ارسال انجام میشه\n\n' +
+             '⚡ هیچ مبلغی قبل از تأیید ادمین دریافت نمیشه!',
+        opts: [
+          {l:'⏱️ زمان تحویل', n:'time'},
+          {l:'📄 فایل مورد نیاز', n:'file'},
+          {l:'💳 روش پرداخت', n:'payment'},
+          {l:'🔙 برگشت', n:'root'},
+        ],
+      },
+      track: {
+        msg: null, dyn: 'orders',
+        opts: [{l:'🔙 برگشت', n:'root'}],
+      },
+      pay: {
+        msg: '💰 قیمت‌گذاری و پرداخت:\n\n' +
+             'قیمت هر طرح بر اساس نوع طراحی و پیچیدگی تعیین میشه.\n' +
+             'ادمین بعد از بررسی سفارش، قیمت نهایی رو باهاتون هماهنگ می‌کنه.\n\n' +
+             '💳 روش‌های پرداخت:\n' +
+             '• کارت به کارت\n' +
+             '• واریز به حساب\n' +
+             '• پرداخت آنلاین',
+        opts: [
+          {l:'📋 جزئیات پرداخت', n:'payment'},
+          {l:'🔙 برگشت', n:'root'},
+        ],
+      },
+      payment: {
+        msg: '💳 روش‌های پرداخت:\n\n' +
+             '۱️⃣ کارت به کارت — بعد از تأیید ادمین شماره کارت ارسال میشه\n' +
+             '۲️⃣ واریز به حساب — شماره حساب از طریق تلگرام ارسال میشه\n' +
+             '۳️⃣ پرداخت آنلاین — از طریق درگاه امن سایت\n\n' +
+             '⚠️ توجه: هیچ پیش‌پرداختی بدون تأیید ادمین دریافت نمیشه.',
+        opts: [
+          {l:'🔙 برگشت', n:'root'},
+        ],
+      },
+      time: {
+        msg: '⏱️ زمان تحویل:\n\n' +
+             '• طرح گرافیکی ساده: ۲ تا ۵ روز کاری\n' +
+             '• طراحی بسته‌بندی: ۳ تا ۷ روز کاری\n' +
+             '• چاپ ساده: ۳ تا ۷ روز کاری\n' +
+             '• پکیج عمده: ۷ تا ۱۴ روز کاری\n\n' +
+             '⏰ زمان دقیق بعد از بررسی سفارش توسط ادمین اعلام میشه.',
+        opts: [
+          {l:'📦 پیگیری سفارش', n:'track'},
+          {l:'🔙 برگشت', n:'root'},
+        ],
+      },
+      file: {
+        msg: '📄 فرمت‌ها و مشخصات فایل:\n\n' +
+             '✅ فرمت‌های قابل قبول:\n' +
+             '• Adobe Illustrator (AI)\n' +
+             '• Photoshop (PSD)\n' +
+             '• PDF\n' +
+             '• PNG (با کیفیت بالا)\n\n' +
+             '📐 مشخصات فنی:\n' +
+             '• رزولوشن: حداقل 300 DPI\n' +
+             '• حالت رنگ: CMYK (برای چاپ)\n' +
+             '• حاشیه برش: حداقل 3 میلی‌متر\n' +
+             '• حاشیه ایمنی: حداقل 5 میلی‌متر',
+        opts: [
+          {l:'🔙 برگشت', n:'root'},
+        ],
+      },
+      design: {
+        msg: '🎨 خدمات طراحی Nash Graphic:\n\n' +
+             'ما در زمینه‌های زیر خدمات ارائه می‌دیم:\n\n' +
+             '• 🏷️ طراحی لوگو و هویت بصری\n' +
+             '• 📦 طراحی بسته‌بندی محصول\n' +
+             '• 🏪 طراحی کاتالوگ و بروشور\n' +
+             '• 📱 طراحی بنر و تبلیغات\n' +
+             '• 🎨 طراحی کارت ویزیت\n' +
+             '• 📋 طراحی فرم و اوراق اداری',
+        opts: [
+          {l:'🏷️ طراحی لوگو', n:'logo'},
+          {l:'📦 طراحی بسته‌بندی', n:'packaging'},
+          {l:'📸 نمونه کارها', n:'portfolio'},
+          {l:'🔙 برگشت', n:'root'},
+        ],
+      },
+      logo: {
+        msg: '🏷️ طراحی لوگو:\n\n' +
+             'لوگوی حرفه‌ای اولین چیزیه که مشتری‌ها می‌بینن!\n\n' +
+             '✅ ویژگی‌های کار ما:\n' +
+             '• طراحی منحصربه‌فرد و اورجینال\n' +
+             '• ارائه فایل‌های لایه‌باز و نهایی\n' +
+             '• چندین پیش‌طرح برای انتخاب\n' +
+             '• اصلاحات رایگان تا رضایت کامل\n\n' +
+             '💡 برای سفارش، از بخش «خرید» اقدام کن یا با ادمین تماس بگیر.',
+        opts: [
+          {l:'🛒 ثبت سفارش', n:'order'},
+          {l:'🔙 برگشت', n:'root'},
+        ],
+      },
+      packaging: {
+        msg: '📦 طراحی بسته‌بندی:\n\n' +
+             'بسته‌بندی جذاب = فروش بیشتر!\n\n' +
+             '✅ خدمات ما:\n' +
+             '• طراحی جعبه و بسته‌بندی محصول\n' +
+             '• طراحی لیبل و برچسب\n' +
+             '• طراحی کیف و پاکت\n' +
+             '• رعایت استانداردهای چاپ\n' +
+             '• فایل آماده چاپ با مشخصات فنی دقیق\n\n' +
+             '💡 برای سفارش، از بخش «خرید» اقدام کن.',
+        opts: [
+          {l:'🛒 ثبت سفارش', n:'order'},
+          {l:'🔙 برگشت', n:'root'},
+        ],
+      },
+      print: {
+        msg: '🖨️ خدمات چاپ:\n\n' +
+             'ما با بهترین چاپخانه‌های کشور همکاری می‌کنیم:\n\n' +
+             '• 📋 چاپ کاتالوگ و بروشور\n' +
+             '• 📦 چاپ بسته‌بندی\n' +
+             '• 🏷️ چاپ لیبل و برچسب\n' +
+             '• 📄 چاپ اوراق اداری\n' +
+             '• 🖼️ چاپ بنر و پوستر\n\n' +
+             '💡 از بخش «خرید» سفارش بده تا قیمت و زمان دقیق اعلام بشه.',
+        opts: [
+          {l:'🛒 ثبت سفارش', n:'order'},
+          {l:'⏱️ زمان تحویل', n:'time'},
+          {l:'🔙 برگشت', n:'root'},
+        ],
+      },
+      portfolio: {
+        msg: '📸 نمونه کارهای ما:\n\n' +
+             'در صفحه اصلی سایت می‌تونی نمونه کارهای ما رو ببینی:\n\n' +
+             '• طراحی لوگو برندهای مختلف\n' +
+             '• بسته‌بندی محصولات غذایی و بهداشتی\n' +
+             '• کاتالوگ و بروشور شرکتی\n' +
+             '• طراحی هویت بصری کامل\n\n' +
+             '💡 برای دیدن نمونه کارها به صفحه اصلی سایت مراجعه کن.',
+        opts: [
+          {l:'🎨 خدمات طراحی', n:'design'},
+          {l:'🔙 برگشت', n:'root'},
+        ],
+      },
+      contact: {
+        msg: '📞 تماس با ادمین:\n\n' +
+             'برای تماس مستقیم:\n' +
+             '• از صفحه «پشتیبانی» سایت تیکت ثبت کن\n' +
+             '• ادمین معمولاً ۲ تا ۴ ساعت پاسخ میده\n\n' +
+             '📱 کانال‌های ارتباطی:\n' +
+             '• تلگرام\n' +
+             '• ایتا\n' +
+             '• روبیکا\n\n' +
+             '⏰ ساعات پاسخگویی: شنبه تا پنجشنبه، ۱۰ صبح تا ۶ عصر',
+        opts: [
+          {l:'📝 ثبت تیکت', a: 'support'},
+          {l:'🔙 برگشت', n:'root'},
+        ],
+      },
+      complaint: {
+        msg: '😔 متأسفیم که راضی نیستی!\n\n' +
+             'لطفاً مشکلت رو توضیح بده تا پیگیری کنیم:\n\n' +
+             '• اگه مشکل فنی داری → بررسی و رفع میشه\n' +
+             '• اگه از کیفیت ناراضی هستی → اصلاحات رایگان انجام میشه\n' +
+             '• اگه مشکل پرداخت داری → با ادمین هماهنگ میشه\n\n' +
+             '💡 بهترین راه: تیکت ثبت کن تا سریع‌تر پیگیری بشه.',
+        opts: [
+          {l:'📝 ثبت تیکت', a: 'support'},
+          {l:'💰 سیاست بازگشت', n:'refund'},
+          {l:'🔙 برگشت', n:'root'},
+        ],
+      },
+      refund: {
+        msg: '💰 سیاست بازگشت وجه:\n\n' +
+             '• اگه کار هنوز شروع نشده → بازگشت کامل\n' +
+             '• اگه کار در حال انجامه → بعد از بررسی ادمین\n' +
+             '• اگه کار تحویل شده → در صورت عدم مطابقت با سفارش\n\n' +
+             '⚠️ لطفاً با ادمین از طریق تیکت صحبت کنید.\n' +
+             'پشتیبانی ما همیشه آماده حل مشکلات شماست!',
+        opts: [
+          {l:'📝 ثبت تیکت', a: 'support'},
+          {l:'📞 تماس با ادمین', n:'contact'},
+          {l:'🔙 برگشت', n:'root'},
+        ],
+      },
+      thanks: {
+        msg: '🙏 خواهش می‌کنم! خوشحالیم که تونستیم کمکت کنیم.\n\n' +
+             'اگه سوال دیگه‌ای داشتی، اینجا هستیم! 😊',
+        opts: [
+          {l:'🛒 ثبت سفارش', n:'order'},
+          {l:'📦 پیگیری سفارش', n:'track'},
+          {l:'🔙 برگشت', n:'root'},
+        ],
+      },
+      help: {
+        msg: '❓ راهنمای Nash Graphic:\n\n' +
+             'اینجا پلتفرم طراحی و چاپ هستیم. می‌تونیم کمکت کنیم با:\n\n' +
+             '• 🛒 ثبت سفارش طراحی یا چاپ\n' +
+             '• 📦 پیگیری سفارش‌های قبلی\n' +
+             '• 💰 اطلاع از قیمت و روش پرداخت\n' +
+             '• 🎨 طراحی لوگو، بسته‌بندی و ... \n' +
+             '• 🖨️ خدمات چاپ حرفه‌ای\n\n' +
+             'فقط کافیه سوالت رو بپرسی یا از دکمه‌های زیر انتخاب کن!',
+        opts: [
+          {l:'🛒 ثبت سفارش', n:'order'},
+          {l:'💰 قیمت و پرداخت', n:'pay'},
+          {l:'📞 تماس با ادمین', n:'contact'},
+          {l:'🔙 برگشت', n:'root'},
+        ],
+      },
+      order_done: {
+        msg: '✅ سفارش ثبت شد!\n\n' +
+             'ادمین به زودی سفارشت رو بررسی می‌کنه.\n' +
+             'از طریق تلگرام / ایتا / روبیکا باهات تماس می‌گیریم.\n\n' +
+             '💡 برای پیگیری سفارش از بخش «پیگیری سفارش» استفاده کن.',
+        opts: [
+          {l:'📦 پیگیری سفارش', n:'track'},
+          {l:'🔙 برگشت', n:'root'},
+        ],
+      },
     };
 
+    /* ── Regex pattern matching ────────────────────────── */
+    const PATTERNS = [
+      { rx: /سلام|درود|هلو|hello|hi\b|hey|خسته نباشی|خوش اومد|شب بخیر|صبح بخیر/i,
+        node: 'root', greet: true },
+      { rx: /ممنون|متشکر|مرسی|ممنونم|سپاس|خیلی ممنون|تشکر|عذرخواهی/i,
+        node: 'thanks' },
+      { rx: /شکایت|ناراضی|بد|اخلاق|بی‌احترامی|گند زد|خراب|بدترین/i,
+        node: 'complaint' },
+      { rx: /بازگشت|پس گرفتن|برگشت پول| Refund|ریفاند|پس بده|پس بگیرم|لغو.*سفارش/i,
+        node: 'refund' },
+      { rx: /سفارش|خرید|ثبت سفارش|order|سبد خرید|خریدن|سفارش بدم|سفارش بدم|می‌خوام سفارش/i,
+        node: 'order' },
+      { rx: /پیگیری|وضعیت|کد پیگیری|track|کجا رسید|چه شد|سفارشم|پیگیر|کد سفارش/i,
+        node: 'track' },
+      { rx: /قیمت|هزینه|چقدر|چند|گرون|ارزون|price|多少钱/i,
+        node: 'pay' },
+      { rx: /پرداخت|کارت|واریز|کارت به کارت|حساب|پرداخت کنم|پول/i,
+        node: 'payment' },
+      { rx: /زمان|تحویل|چند روز|سریع|عجله|کی میشه|چه وقت|مدت|انتظار|طول میکشه/i,
+        node: 'time' },
+      { rx: /فرمت|فایل|dpi|رزولوشن|سایز|ابعاد|CMYK|رنگ|پیکسل|کیفیت فایل| فایل /i,
+        node: 'file' },
+      { rx: /تماس|ادمین|شماره|tel|تلفن|تماس بگیرم|پیام بدم|ارتباط|پشتیبانی.* تماس/i,
+        node: 'contact' },
+      { rx: /نمونه کار|پورتفولیو|portfolio|نمونه|کارهای قبلی|سابقه|دیدن کار/i,
+        node: 'portfolio' },
+      { rx: /طراحی|لوگو|بسته بندی|بروشور|کاتالوگ|بنر|کارت ویزیت|هویت بصری|آرم|branding|identity/i,
+        node: 'design' },
+      { rx: /لوگو|آرم|نشان|نشانه|نماد.*برند|logo/i,
+        node: 'logo' },
+      { rx: /بسته بندی|جعبه|لیبل|برچسب|packaging|بسته‌بندی/i,
+        node: 'packaging' },
+      { rx: /چاپ|چاپخانه|print|پرینت|چاپ کنم|چاپ بدم/i,
+        node: 'print' },
+      { rx: /کمک|راهنما|help|راهنمایی|توضیح بده|چی هست|چی کار میکنید|چطور|چجوری|چگونه/i,
+        node: 'help' },
+      { rx: /پشتیبانی.*تیکت|تیکت.*ثبت|support|tiicket/i,
+        node: 'contact' },
+    ];
+
+    /* ── Intent router ─────────────────────────────────── */
+    function matchIntent(text) {
+      for (const p of PATTERNS) {
+        if (p.rx.test(text)) return p;
+      }
+      return null;
+    }
+
+    /* ── Tree navigation ───────────────────────────────── */
     async function goNode(key) {
-      const node = TREE[key]; if (!node) return;
-      await wait(500); hideTyping();
+      const node = TREE[key];
+      if (!node) return;
+      await wait(400);
+      hideTyping();
       if (node.dyn === 'orders') {
         const orders = await fetchOrders();
         addMsg(!orders.length
-          ? 'سفارشی یافت نشد. با کد پیگیری از صفحه «پیگیری سفارش» وضعیت رو چک کن.'
-          : orders.map(o =>
-              `🔹 ${o.tracking_code||o.id.slice(0,8)}\n   ${STATUS_FA[o.status]||o.status} | ${new Date(o.created_at).toLocaleDateString('fa-IR')}`
+          ? '🔍 سفارشی یافت نشد.\n\nاگه کد پیگیری داری، از صفحه «پیگیری سفارش» سایت استفاده کن.'
+          : '📦 سفارش‌های اخیر شما:\n\n' + orders.map(o =>
+              `🔹 ${o.tracking_code || o.id.slice(0,8)}\n   ${STATUS_FA[o.status] || o.status} | ${new Date(o.created_at).toLocaleDateString('fa-IR')}`
             ).join('\n\n')
         );
       } else {
@@ -343,145 +614,124 @@
       renderOpts(node.opts);
     }
 
-    function treeFallback(text) {
+    /* ── Free-text handler (pattern matching) ──────────── */
+    function handleFreeText(text) {
+      const intent = matchIntent(text);
       showTyping();
-      if (/سلام|درود|hi\b|hello|hey/i.test(text))
-        { setTimeout(()=>{hideTyping();addMsg('سلام! 👋 خوش اومدی. چطور می‌تونم کمکت کنم؟');renderOpts([{l:'🛒 سفارش',n:'order'},{l:'📦 پیگیری',n:'track'},{l:'💰 قیمت',n:'pay'},{l:'📞 تماس',n:'contact'}]);},400); }
-      else if (/ممنون|متشکر|مرسی|سپاس|thanks/i.test(text))
-        { setTimeout(()=>{hideTyping();addMsg('خواهش می‌کنم! 😊 اگه سوال دیگه‌ای داری، در خدمتم.');renderOpts([{l:'🔙 منوی اصلی',n:'root'}]);},400); }
-      else if (/سفارش|خرید|ثبت سفارش/i.test(text))  goNode('order');
-      else if (/پیگیری|وضعیت|کد پیگیری/i.test(text))  goNode('track');
-      else if (/قیمت|هزینه|چقدر|گرون|ارزان/i.test(text))
-        { setTimeout(()=>{hideTyping();addMsg('💰 قیمت‌ها به عوامل مختلفی بستگی داره:\n• نوع طراحی\n• تعداد رنگ\n• تیراژ چاپ\n\nقیمت دقیق بعد از بررسی سفارش اعلام میشه. از بازارچه قیمت پایه هر دسته رو می‌بینی.');renderOpts([{l:'🛒 نحوه سفارش',n:'order'},{l:'📞 تماس با ادمین',n:'contact'},{l:'🔙 برگشت',n:'root'}]);},400); }
-      else if (/پرداخت|کارت|واریز|نقدی|آنلاین/i.test(text))
-        { setTimeout(()=>{hideTyping();addMsg('💳 روش‌های پرداخت:\n• کارت به کارت\n• پرداخت آنلاین\n• نقدی\n\n⚠️ هیچ مبلغی قبل از تأیید سفارش دریافت نمیشه!');renderOpts([{l:'🛒 نحوه سفارش',n:'order'},{l:'🔙 برگشت',n:'root'}]);},400); }
-      else if (/زمان|تحویل|چند روز|سریع|آماده/i.test(text))
-        { setTimeout(()=>{hideTyping();addMsg('⏱ زمان تحویل:\n• طرح گرافیکی: ۲–۳ روز کاری\n• بسته‌بندی: ۳–۵ روز کاری\n• چاپ ساده: ۳–۷ روز کاری\n• پکیج عمده: ۷–۱۴ روز کاری');renderOpts([{l:'🛒 سفارش',n:'order'},{l:'💰 قیمت',n:'pay'},{l:'🔙 برگشت',n:'root'}]);},400); }
-      else if (/فرمت|فایل|DPI|CMYK|AI|PDF|PSD/i.test(text))
-        { setTimeout(()=>{hideTyping();addMsg('📄 فرمت‌های قابل قبول:\n• اصلی: AI، PDF، PSD، CDR\n• پیش‌نمایش: PNG، JPG (300+ DPI)\n• رنگ: CMYK الزامی\n• حاشیه: حداقل ۳ میلیمتر');renderOpts([{l:'⏱ زمان',n:'time'},{l:'🔙 برگشت',n:'root'}]);},400); }
-      else if (/تماس|ادمین|شماره|تلفن|پشتیبانی/i.test(text))  goNode('contact');
-      else if (/نمونه کار|پورتفولیو|نمونه|محصول/i.test(text))
-        { setTimeout(()=>{hideTyping();addMsg('🎨 نمونه‌کارها:\n• کانال تلگرام: @nash_graphic_team\n• صفحه بازارچه سایت\n• منوی پورتفولیو');renderOpts([{l:'🛒 سفارش',n:'order'},{l:'📞 تماس',n:'contact'},{l:'🔙 برگشت',n:'root'}]);},400); }
-      else if (/طراحی|لوگو|بسته بندی|بسته‌بندی|کارت ویزیت|پوستر/i.test(text))
-        { setTimeout(()=>{hideTyping();addMsg('🎯 خدمات طراحی:\n• لوگو و هویت بصری\n• بسته‌بندی و جعبه\n• کارت ویزیت\n• پوستر و بروشور\n• قالب برش (دای‌کات)\n• آماده‌سازی فایل چاپی');renderOpts([{l:'💰 قیمت',n:'pay'},{l:'📄 فرمت',n:'file'},{l:'🛒 سفارش',n:'order'}]);},400); }
-      else if (/چاپ|چاپخانه|چاپ افست|چاپ دیجیتال|چاپ سیلک/i.test(text))
-        { setTimeout(()=>{hideTyping();addMsg('🖨️ خدمات چاپ:\n• چاپ دیجیتال (تیراژ کم)\n• چاپ افست (تیراژ بالا)\n• چاپ سیلک\n• چاپ بنر و فلکس');renderOpts([{l:'💰 قیمت',n:'pay'},{l:'⏱ زمان',n:'time'},{l:'🔙 برگشت',n:'root'}]);},400); }
-      else if (/شکایت|ناراضی|مشکل|خراب|باگ/i.test(text))
-        { setTimeout(()=>{hideTyping();addMsg('😔 متأسفم. لطفاً تیکت پشتیبانی ثبت کن تا سریعاً بررسی بشه.\n📞 یا با ۰۹۳۵۱۷۶۰۰۵۴ تماس بگیر.');renderOpts([{l:'📝 ثبت تیکت',a:'support'},{l:'📞 تماس',n:'contact'},{l:'🔙 برگشت',n:'root'}]);},400); }
-      else if (/بازگشت|پس گرفتن|refund|برگشت پول/i.test(text))
-        { setTimeout(()=>{hideTyping();addMsg('🔄 سیاست بازگشت:\n• دیجیتال: تا ۴۸ ساعت\n• فیزیکی: تا ۷ روز\n• شرط: مطابق سفارش نباشه');renderOpts([{l:'📝 ثبت تیکت',a:'support'},{l:'🔙 برگشت',n:'root'}]);},400); }
-      else if (/کمک|راهنما|help|ندونستم|بلدم نیست/i.test(text))
-        { setTimeout(()=>{hideTyping();addMsg('🤝 راهنما:\nمن می‌تونم کمکت کنم در:\n• 🛒 نحوه سفارش\n• 📦 پیگیری سفارش\n• 💰 اطلاعات قیمت\n• 📄 فرمت فایل‌ها\n• 📞 تماس با ادمین');renderOpts([{l:'🛒 سفارش',n:'order'},{l:'📦 پیگیری',n:'track'},{l:'💰 قیمت',n:'pay'},{l:'📞 تماس',n:'contact'}]);},400); }
-      else if (/ساعت|زمان کاری|کی هستین|کی بازین|تعطیل/i.test(text))
-        { setTimeout(()=>{hideTyping();addMsg('🕐 ساعت کاری:\n• شنبه تا پنج‌شنبه: ۹ صبح تا ۶ عصر\n• جمعه‌ها تعطیل\n⏰ پاسخگویی تلگرام و تیکت: ۲۴ ساعته');renderOpts([{l:'📞 تماس',n:'contact'},{l:'🔙 برگشت',n:'root'}]);},400); }
-      else { hideTyping(); addMsg('متأسفم، متوجه نشدم. 🤔\nلطفاً از گزینه‌های زیر انتخاب کن:'); goNode('root'); }
-    }
 
-    /* AI */
-    async function aiReply(userText) {
-      history.push({ role:'user', content: userText });
-      showTyping();
-      try {
-        const ordersTxt = ctx.orders?.length
-          ? '\n\nسفارش‌های اخیر کاربر:\n' + ctx.orders.map(o =>
-              `#${o.tracking_code||o.id.slice(0,8)}: ${STATUS_FA[o.status]||o.status} (${new Date(o.created_at).toLocaleDateString('fa-IR')})`
-            ).join('\n')
-          : '';
-        const system =
-            `تو دستیار پشتیبانی Nash Graphic (نش گرافیک) هستی — پلتفرم ایرانی طراحی و چاپ.` +
-            (ctx.product ? `\nمحصول فعلی: ${JSON.stringify(ctx.product)}` : '') +
-            (ctx.step==='checkout' ? '\nکاربر در مرحله ثبت سفارش است.' : '') +
-            ordersTxt +
-            `\n\nقوانین:\n- فقط فارسی پاسخ بده\n- پاسخ‌ها کوتاه و کاربردی (حداکثر ۳ جمله)\n` +
-            `- اگر سوال درباره قیمت دقیق است، بگو ادمین تماس می‌گیرد\n` +
-            `- فرآیند: سفارش → بررسی ادمین → تماس → پرداخت → ارسال`;
-        const reply = await callAIWithHistory({ system, messages: history.slice(-10) });
-        hideTyping();
-        history.push({ role:'assistant', content: reply });
-        addMsg(reply);
-      } catch (e) {
-        hideTyping();
-        // اگه AI در دسترس نبود، به decision tree برگرد
-        useAI = false;
-        addMsg('در حال حاضر هوش مصنوعی در دسترس نیست. از منوی راهنما استفاده کن:');
-        showTyping(); goNode('root');
+      if (intent) {
+        if (intent.greet) {
+          // Show context-aware greeting
+          const greetMsg = ctx.step === 'checkout'
+            ? 'سلام! 👋 می‌بینم که داری سفارش می‌دی. چطور کمکت کنم؟'
+            : 'سلام! 👋 خوش اومدی! چطور می‌تونم کمکت کنم؟';
+          hideTyping();
+          addMsg(greetMsg);
+          renderOpts([
+            {l:'🛒 فرآیند سفارش', n:'order'},
+            {l:'💰 قیمت و پرداخت', n:'pay'},
+            {l:'🎨 خدمات طراحی', n:'design'},
+            {l:'📞 تماس با ادمین', n:'contact'},
+          ]);
+          return;
+        }
+        goNode(intent.node);
+        return;
       }
+
+      // Fallback — try to match partial keywords
+      if (/کد|شماره|tracking|TRK|\d{4,}/.test(text)) {
+        hideTyping();
+        addMsg('🔍 به نظر میاد دنبال پیگیری سفارش هستی.\n\n' +
+               'برای پیگیری سفارش، از صفحه «پیگیری سفارش» سایت استفاده کن\n' +
+               'یا با کد پیگیری خودت از ادمین سوال کن.');
+        renderOpts([
+          {l:'📦 پیگیری سفارش', n:'track'},
+          {l:'📞 تماس با ادمین', n:'contact'},
+          {l:'🔙 برگشت', n:'root'},
+        ]);
+        return;
+      }
+
+      // Generic fallback
+      hideTyping();
+      addMsg('🤔 متوجه نشدم، ولی نگران نباش!\n\n' +
+             'از گزینه‌های زیر انتخاب کن یا سوالت رو واضح‌تر بپرس:');
+      goNode('root');
     }
 
-    /* DOM */
-    const hhmm = () => new Date().toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
+    /* ── DOM helpers ───────────────────────────────────── */
+    const hhmm = () => new Date().toLocaleTimeString('fa-IR', {hour:'2-digit', minute:'2-digit'});
 
     function addMsg(text, who='bot') {
       const el = document.getElementById('na-s-msgs'); if (!el) return;
       const d = document.createElement('div');
       d.className = `na-msg ${who}`;
-      d.innerHTML = text.replace(/\n/g,'<br>') + `<div class="na-msg-t">${hhmm()}</div>`;
+      d.innerHTML = text.replace(/\n/g, '<br>') + `<div class="na-msg-t">${hhmm()}</div>`;
       el.appendChild(d); el.scrollTop = el.scrollHeight;
     }
+
     function showTyping() {
       const el = document.getElementById('na-s-msgs'); if (!el) return;
       if (document.getElementById('na-s-typ')) return;
       const d = document.createElement('div');
-      d.className='na-typing'; d.id='na-s-typ';
-      d.innerHTML='<span></span><span></span><span></span>';
+      d.className = 'na-typing'; d.id = 'na-s-typ';
+      d.innerHTML = '<span></span><span></span><span></span>';
       el.appendChild(d); el.scrollTop = el.scrollHeight;
     }
+
     function hideTyping() { document.getElementById('na-s-typ')?.remove(); }
+
     function renderOpts(opts=[]) {
-      const c = document.getElementById('na-s-qrs'); if (!c) return; c.innerHTML='';
+      const c = document.getElementById('na-s-qrs'); if (!c) return; c.innerHTML = '';
       opts.forEach(o => {
         const b = document.createElement('button');
-        b.className='na-qr'; b.textContent=o.l;
+        b.className = 'na-qr'; b.textContent = o.l;
         b.onclick = () => {
-          c.innerHTML=''; addMsg(o.l,'user');
-          if (o.a==='support') { closePanel(); if(typeof Router!=='undefined') Router.navigate('support'); }
-          else if (o.n) { showTyping(); goNode(o.n); }
+          c.innerHTML = ''; addMsg(o.l, 'user');
+          if (o.a === 'support') {
+            closePanel();
+            if (typeof Router !== 'undefined') Router.navigate('support');
+          } else if (o.n) { showTyping(); goNode(o.n); }
         };
         c.appendChild(b);
       });
     }
 
-    function showKeyPrompt() {
-      document.getElementById('na-key-prompt').classList.add('na-vis');
-      document.getElementById('na-s-chatui').classList.remove('na-vis');
-    }
-    function showChatUI() {
-      document.getElementById('na-key-prompt').classList.remove('na-vis');
-      document.getElementById('na-s-chatui').classList.add('na-vis');
-    }
-
-    function activateAI(key) {
-      APIKey.set(key); useAI = true; showChatUI();
-      history = [];
-      addMsg(ctx.step==='checkout'
-        ? 'سلام! 👋 می‌بینم که داری سفارش می‌دی. سوالی داری؟'
-        : 'سلام! 👋 به پشتیبانی Nash Graphic خوش اومدی. چطور کمکت کنم؟');
-    }
-    function activateFallback() {
-      skipKey=true; useAI=false; showChatUI();
-      showTyping(); goNode('root');
-    }
-
+    /* ── Panel lifecycle ───────────────────────────────── */
     function openPanel() {
-      isOpen=true;
+      isOpen = true;
       document.getElementById('na-s-panel').classList.add('na-open');
-      document.getElementById('na-s-badge').style.display='none';
+      document.getElementById('na-s-badge').style.display = 'none';
       const msgs = document.getElementById('na-s-msgs');
       if (!msgs || msgs.children.length > 0) return;
-      // شروع مستقیم با decision tree — بدون AI
-      showChatUI(); goNode('root');
+      // Start with the decision tree — no AI, no key prompt
+      history = [];
+      const greetMsg = ctx.step === 'checkout'
+        ? 'سلام! 👋 می‌بینم که داری سفارش می‌دی.\nچطور کمکت کنم؟'
+        : 'سلام! 👋 به پشتیبانی Nash Graphic خوش اومدی.\nچطور می‌تونم کمکت کنم؟';
+      addMsg(greetMsg);
+      renderOpts(TREE.root.opts);
     }
-    function closePanel() { isOpen=false; document.getElementById('na-s-panel').classList.remove('na-open'); }
+
+    function closePanel() {
+      isOpen = false;
+      document.getElementById('na-s-panel').classList.remove('na-open');
+    }
+
     const togglePanel = () => isOpen ? closePanel() : openPanel();
 
     function sendUser() {
       const inp = document.getElementById('na-s-inp');
       const text = inp.value.trim(); if (!text) return;
-      inp.value=''; addMsg(text,'user');
-      document.getElementById('na-s-qrs').innerHTML='';
-      treeFallback(text);
+      inp.value = '';
+      addMsg(text, 'user');
+      document.getElementById('na-s-qrs').innerHTML = '';
+      history.push({role:'user', content:text});
+      handleFreeText(text);
     }
 
+    /* ── Init: build DOM (no key prompt) ───────────────── */
     function init() {
       document.body.insertAdjacentHTML('beforeend', `
         <button id="na-s-btn" title="پشتیبانی">🎨<span id="na-s-badge"></span></button>
@@ -492,7 +742,7 @@
             <button class="na-x-btn" id="na-s-close">✕</button>
           </div>
           <div id="na-s-ctx"><span>📦</span><span id="na-s-ctx-txt"></span></div>
-          <div id="na-s-chatui" class="na-vis">
+          <div id="na-s-chatui" class="na-vis" style="display:flex;flex-direction:column;flex:1;">
             <div class="na-msgs" id="na-s-msgs"></div>
             <div class="na-qrs" id="na-s-qrs"></div>
             <div class="na-inp-row">
@@ -502,24 +752,24 @@
           </div>
         </div>
       `);
-      document.getElementById('na-s-btn').onclick      = togglePanel;
-      document.getElementById('na-s-close').onclick    = closePanel;
-      document.getElementById('na-s-send').onclick     = sendUser;
+      document.getElementById('na-s-btn').onclick   = togglePanel;
+      document.getElementById('na-s-close').onclick = closePanel;
+      document.getElementById('na-s-send').onclick  = sendUser;
       document.getElementById('na-s-inp').addEventListener('keydown', e => {
-        if (e.key==='Enter') { e.preventDefault(); sendUser(); }
+        if (e.key === 'Enter') { e.preventDefault(); sendUser(); }
       });
-      // حذف شده — agent بدون AI کار می‌کنه
     }
 
+    /* ── Open with marketplace context ─────────────────── */
     async function openWithContext({ step, product } = {}) {
       ctx.step = step;
       if (product) ctx.product = product;
-      if (step==='tracking' || step==='checkout') ctx.orders = await fetchOrders();
-      const bar=document.getElementById('na-s-ctx'), txt=document.getElementById('na-s-ctx-txt');
-      if (bar && txt && (product||step)) {
+      if (step === 'tracking' || step === 'checkout') ctx.orders = await fetchOrders();
+      const bar = document.getElementById('na-s-ctx'), txt = document.getElementById('na-s-ctx-txt');
+      if (bar && txt && (product || step)) {
         txt.textContent = product
-          ? `محصول: ${product.name||product.title||''}`
-          : step==='checkout' ? 'راهنمای ثبت سفارش' : 'پیگیری سفارش';
+          ? `محصول: ${product.name || product.title || ''}`
+          : step === 'checkout' ? 'راهنمای ثبت سفارش' : 'پیگیری سفارش';
         bar.classList.add('na-vis');
       }
       openPanel();
@@ -527,7 +777,6 @@
 
     return { init, open: openPanel, close: closePanel, toggle: togglePanel, openWithContext };
   })();
-
   /* ════════════════════════════════════════════════════════
      CONTENT AGENT
   ════════════════════════════════════════════════════════ */
