@@ -625,6 +625,11 @@ const Dashboard = {
     }
   }
   
+  // Make stock functions accessible as Dashboard methods
+  Dashboard.loadStockImages = loadStockImages;
+  Dashboard.buyStockImage = buyStockImage;
+  Dashboard.downloadStockOriginal = downloadStockOriginal;
+  
   window.StockImages = { load: loadStockImages, buy: buyStockImage, download: downloadStockOriginal };
   
   document.addEventListener('DOMContentLoaded', () => {
@@ -633,7 +638,7 @@ const Dashboard = {
       Router.navigate = function(page, params) {
         origNavigate(page, params);
         if (page === 'designer-dashboard') {
-          setTimeout(loadStockImages, 500);
+          setTimeout(() => Dashboard.loadStockImages(), 500);
         }
       };
     }
