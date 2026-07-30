@@ -350,7 +350,9 @@
         <button class="tab-btn" onclick="Admin.showTab('faq')">FAQ</button>
         <button class="tab-btn" onclick="Admin.showTab('tickets')">تیکت‌ها</button>
         <button class="tab-btn" onclick="Admin.showTab('agent')">🤖 Agent</button>
+        <button class="tab-btn" onclick="Admin.showTab('payment')">💳 پرداخت</button>
         <button class="tab-btn" onclick="Admin.showTab('agent')">🤖 Agent</button>
+        <button class="tab-btn" onclick="Admin.showTab('payment')">💳 پرداخت</button>
       </div>
       <div id="admin-content" class="admin-content glass"></div>
     </div>
@@ -618,16 +620,45 @@
 
 <!-- Checkout Modal -->
 <div id="modal-checkout" class="modal-overlay hidden">
-  <div class="modal glass">
+  <div class="modal glass" style="max-width:420px">
     <button class="modal-close" onclick="Modal.close('checkout')">✕</button>
-    <h3 id="checkout-modal-title">تکمیل سفارش</h3>
+    <h3 id="checkout-modal-title" style="text-align:center;margin-bottom:1rem">💳 پرداخت و تکمیل سفارش</h3>
+    
+    <!-- Card Info -->
+    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem;text-align:center">
+      <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.5rem">شماره کارت برای واریز</div>
+      <div id="payment-card-number" style="font-size:1.4rem;font-weight:700;color:#c8a96e;letter-spacing:2px;direction:ltr">6037-9918-9999-0000</div>
+      <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.5rem">به نام <span id="payment-card-holder" style="color:white;font-weight:600">نیکا [نام خانوادگی]</span></div>
+      <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.3rem">بانک <span style="color:white">مسکن</span></div>
+    </div>
+    
+    <!-- Amount -->
+    <div style="background:rgba(200,169,110,0.1);border:1px solid rgba(200,169,110,0.3);border-radius:8px;padding:0.75rem;text-align:center;margin-bottom:1rem">
+      <div style="font-size:0.8rem;color:var(--text-secondary)">مبلغ قابل پرداخت</div>
+      <div id="payment-amount" style="font-size:1.5rem;font-weight:700;color:#c8a96e">۰ تومان</div>
+    </div>
+
+    <!-- User Info -->
     <input id="checkout-name" type="text" class="input" placeholder="نام و نام خانوادگی" />
     <input id="checkout-phone" type="tel" class="input mt-1" placeholder="شماره تماس (الزامی)" required />
-    <textarea id="checkout-address" class="input mt-1" rows="3" placeholder="آدرس تحویل (اختیاری)"></textarea>
-    <p id="checkout-disclaimer" style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.6rem;line-height:1.7">
-      پس از ارسال، سفارش شما برای بررسی به ادمین فرستاده می‌شود. در صورت تأیید، از طریق پیام‌رسانی که ادمین انتخاب می‌کند با شما تماس گرفته خواهد شد.
-    </p>
-    <button id="checkout-submit-btn" class="btn btn-primary w-full mt-2" onclick="Cart.submitOrder()">ارسال درخواست سفارش</button>
+    
+    <!-- Receipt Upload -->
+    <div style="margin-top:0.75rem">
+      <label style="font-size:0.85rem;color:var(--text-secondary);display:block;margin-bottom:0.3rem">📸 رسید پرداخت (اختیاری)</label>
+      <input id="checkout-receipt" type="file" accept="image/*" class="input" style="padding:0.5rem" />
+      <div id="receipt-preview" style="margin-top:0.3rem"></div>
+    </div>
+
+    <!-- Instructions -->
+    <div style="background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:8px;padding:0.75rem;margin-top:0.75rem;font-size:0.8rem;color:var(--text-secondary);line-height:1.8">
+      <strong style="color:#4CAF50">راهنمای پرداخت:</strong><br>
+      ۱. مبلغ رو به شماره کارت بالا واریز کنید<br>
+      ۲. رسید پرداخت رو آپلود کنید (اختیاری)<br>
+      ۳. روی "تأیید و ارسال سفارش" کلیک کنید<br>
+      ۴. سفارش شما بررسی و تأیید می‌شه ✅
+    </div>
+
+    <button id="checkout-submit-btn" class="btn btn-primary w-full mt-2" onclick="Cart.submitOrder()">✅ تأیید و ارسال سفارش</button>
   </div>
 </div>
 
@@ -701,15 +732,15 @@
 <!-- Supabase CDN -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- App Scripts (order matters) -->
-<script src="js/config.js?v=12"></script>
-<script src="js/auth.js?v=12"></script>
-<script src="js/cart.js?v=12"></script>
-<script src="js/marketplace.js?v=12"></script>
-<script src="js/dashboard.js?v=12"></script>
-<script src="js/admin.js?v=12"></script>
+<script src="js/config.js?v=13"></script>
+<script src="js/auth.js?v=13"></script>
+<script src="js/cart.js?v=13"></script>
+<script src="js/marketplace.js?v=13"></script>
+<script src="js/dashboard.js?v=13"></script>
+<script src="js/admin.js?v=13"></script>
 <script src="js/agent.js?v=1"></script>
-<script src="js/portfolio.js?v=12"></script>
-<script src="js/app.js?v=12"></script>
-<script src="js/nash-agents.js?v=12"></script>
+<script src="js/portfolio.js?v=13"></script>
+<script src="js/app.js?v=13"></script>
+<script src="js/nash-agents.js?v=13"></script>
 </body>
 </html>

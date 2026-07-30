@@ -10,6 +10,16 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 
 var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
+// ─── PAYMENT CONFIG (Card to Card) ─────────────────────────
+// Stored in localStorage — admin can change from Admin Panel → تنظیمات پرداخت
+const PAYMENT_DEFAULTS = {
+  card_number:  'شماره کارت را اینجا وارد کنید',
+  card_holder:  'نام صاحب حساب',
+  bank_name:    'نام بانک',
+  phone:        'شماره تماس',
+};
+var PAYMENT_CONFIG = JSON.parse(localStorage.getItem('payment_config') || 'null') || PAYMENT_DEFAULTS;
+
 // ─── I18N DICTIONARY ─────────────────────────────────────────
 const i18n = {
   fa: {

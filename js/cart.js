@@ -157,6 +157,18 @@ const Cart = {
       if (name)  name.value  = State.user.name  || '';
       if (phone) phone.value = State.user.phone || '';
     }
+    // Show total amount
+    const amountEl = document.getElementById('payment-amount');
+    if (amountEl) amountEl.textContent = formatPrice(Cart.getTotal());
+    // Populate card info from config
+    if (typeof PAYMENT_CONFIG !== 'undefined') {
+      const cardEl = document.getElementById('payment-card-number');
+      const holderEl = document.getElementById('payment-card-holder');
+      const bankEl = document.getElementById('payment-bank');
+      if (cardEl) cardEl.textContent = PAYMENT_CONFIG.card_number;
+      if (holderEl) holderEl.textContent = PAYMENT_CONFIG.card_holder;
+      if (bankEl) bankEl.textContent = PAYMENT_CONFIG.bank_name;
+    }
     Cart.translateCheckout();
     Modal.close('cart');
     Modal.open('checkout');
@@ -216,6 +228,18 @@ const Cart = {
         updated_at:     new Date().toISOString(),
       };
 
+      // Handle receipt upload
+      const receiptInput = document.getElementById('checkout-receipt');
+      if (receiptInput && receiptInput.files.length > 0) {
+        const file = receiptInput.files[0];
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+          orderPayload.receipt_image = e.target.result;
+          await DB.update('orders', order.id, { receipt_image: e.target.result });
+        };
+        reader.readAsDataURL(file);
+      }
+      
       const order = await DB.insert('orders', orderPayload);
 
       // Notify admin

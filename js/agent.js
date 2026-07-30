@@ -77,5 +77,58 @@ var Agent = {
   runNow: function() {
     toast('Agent در حال اجرا...', 'info');
     setTimeout(function() { toast('Agent اجرا شد! ✅', 'success'); }, 2000);
+  },
+
+  // ─── PAYMENT SETTINGS ──────────────────────────────────
+  renderPayment: function() {
+    var container = document.getElementById('admin-content');
+    if (!container) return;
+    
+    var cfg = (typeof PAYMENT_CONFIG !== 'undefined') ? PAYMENT_CONFIG : {};
+    
+    container.innerHTML = 
+      '<h3 style="margin-bottom:1rem">💳 تنظیمات پرداخت کارت به کارت</h3>' +
+      '<div class="dash-card glass" style="margin-bottom:1rem">' +
+        '<p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1rem">شماره کارت و اطلاعات حساب خود را اینجا وارد کنید. این اطلاعات در صفحه پرداخت به مشتری نمایش داده می‌شود.</p>' +
+        '<div style="margin-bottom:0.75rem">' +
+          '<label style="font-size:0.85rem;color:var(--text-secondary);display:block;margin-bottom:0.2rem">شماره کارت</label>' +
+          '<input id="pay-card" type="text" class="input" value="' + (cfg.card_number || '') + '" placeholder="6037-9918-9999-0000" style="direction:ltr;text-align:center;font-size:1.1rem;letter-spacing:1px" />' +
+        '</div>' +
+        '<div style="margin-bottom:0.75rem">' +
+          '<label style="font-size:0.85rem;color:var(--text-secondary);display:block;margin-bottom:0.2rem">نام صاحب حساب</label>' +
+          '<input id="pay-holder" type="text" class="input" value="' + (cfg.card_holder || '') + '" placeholder="نام و نام خانوادگی" />' +
+        '</div>' +
+        '<div style="margin-bottom:0.75rem">' +
+          '<label style="font-size:0.85rem;color:var(--text-secondary);display:block;margin-bottom:0.2rem">نام بانک</label>' +
+          '<input id="pay-bank" type="text" class="input" value="' + (cfg.bank_name || '') + '" placeholder="مسکن، ملی،..." />' +
+        '</div>' +
+        '<div style="margin-bottom:0.75rem">' +
+          '<label style="font-size:0.85rem;color:var(--text-secondary);display:block;margin-bottom:0.2rem">شماره تماس</label>' +
+          '<input id="pay-phone" type="text" class="input" value="' + (cfg.phone || '') + '" placeholder="۰۹۳۵۱۷۶۰۰۵۴" />' +
+        '</div>' +
+        '<button class="btn btn-primary" onclick="Agent.savePayment()">💾 ذخیره تنظیمات پرداخت</button>' +
+      '</div>' +
+      '<div class="dash-card glass">' +
+        '<h4>پیش‌نمایش</h4>' +
+        '<div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-top:0.75rem;text-align:center">' +
+          '<div style="font-size:0.8rem;color:var(--text-secondary)">شماره کارت</div>' +
+          '<div id="pay-preview-card" style="font-size:1.3rem;font-weight:700;color:#c8a96e;letter-spacing:2px;direction:ltr;margin:0.5rem 0">' + (cfg.card_number || '---') + '</div>' +
+          '<div style="font-size:0.85rem;color:var(--text-secondary)">به نام <span style="color:white;font-weight:600">' + (cfg.card_holder || '---') + '</span></div>' +
+          '<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.3rem">بانک <span style="color:white">' + (cfg.bank_name || '---') + '</span></div>' +
+        '</div>' +
+      '</div>';
+  },
+
+  savePayment: function() {
+    var cfg = {
+      card_number: (document.getElementById('pay-card') || {}).value || '',
+      card_holder: (document.getElementById('pay-holder') || {}).value || '',
+      bank_name:   (document.getElementById('pay-bank') || {}).value || '',
+      phone:       (document.getElementById('pay-phone') || {}).value || '',
+    };
+    localStorage.setItem('payment_config', JSON.stringify(cfg));
+    window.PAYMENT_CONFIG = cfg;
+    toast('تنظیمات پرداخت ذخیره شد ✅', 'success');
+    Agent.renderPayment();
   }
 };
