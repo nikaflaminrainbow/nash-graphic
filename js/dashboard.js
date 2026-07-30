@@ -624,7 +624,7 @@ const Dashboard = {
 
   function buyStockImage(id) {
     if (typeof Cart === 'undefined') return;
-    Cart.add({
+    Cart.addItem({
       id: 'stock_' + id,
       type: 'stock_image',
       title: document.querySelector(`[data-id="${id}"] .stock-title`)?.textContent || 'Stock Image',
