@@ -1,0 +1,112 @@
+/* ═══════════════════════════════════════════════════════
+   STOCK IMAGES - Watermark & Filters
+   ══════════════════════════════════════════════════════ */
+.stock-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: rgba(200, 169, 110, 0.35);
+  text-shadow: 0 0 10px rgba(0,0,0,0.3);
+  pointer-events: none;
+  white-space: nowrap;
+  letter-spacing: 0.1em;
+  z-index: 2;
+}
+
+.stock-preview {
+  position: relative;
+  overflow: hidden;
+}
+
+.stock-preview::after {
+  content: 'Nash Graphic';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: rgba(200, 169, 110, 0.4);
+  text-shadow: 0 0 8px rgba(0,0,0,0.5);
+  pointer-events: none;
+  white-space: nowrap;
+  letter-spacing: 0.15em;
+  z-index: 2;
+}
+
+.stock-images-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.stock-card {
+  overflow: hidden;
+}
+
+.stock-title {
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0.25rem;
+  color: var(--text-primary);
+}
+
+.stock-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.stock-price {
+  color: #c8a96e;
+  font-weight: 600;
+}
+
+.stock-source {
+  color: var(--text-secondary);
+}
+
+.stock-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.stock-filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.stock-filter-btn {
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.stock-filter-btn.active,
+.stock-filter-btn:hover {
+  background: #c8a96e;
+  color: #000;
+  border-color: #c8a96e;
+}
+
+.stock-search {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}

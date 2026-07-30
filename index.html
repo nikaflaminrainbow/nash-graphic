@@ -21,6 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/stock.css" />
 </head>
 <body class="theme-dark" data-lang="fa">
 
@@ -140,6 +141,23 @@
       <div id="designs-grid" class="designs-grid"></div>
       <div id="designs-loading" class="text-center py-4 hidden"><div class="spinner-sm"></div></div>
       <div id="no-designs" class="empty-state hidden">هیچ طرحی یافت نشد</div>
+      
+      <!-- Stock Images Section -->
+      <div class="stock-section-marketplace" style="margin-top:3rem">
+        <h3 style="margin-bottom:1rem;color:var(--text-primary)">📸 تصاویر استوک</h3>
+        <input type="text" id="stock-search" class="stock-search" placeholder="جستجوی تصاویر استوک..." oninput="Marketplace.filterStock()" />
+        <div class="stock-filters" id="stock-filters">
+          <button class="stock-filter-btn active" onclick="Marketplace.filterStock('all', this)">همه</button>
+          <button class="stock-filter-btn" onclick="Marketplace.filterStock('background', this)">پس‌زمینه</button>
+          <button class="stock-filter-btn" onclick="Marketplace.filterStock('vector', this)">وکتور</button>
+          <button class="stock-filter-btn" onclick="Marketplace.filterStock('pattern', this)">پترن</button>
+          <button class="stock-filter-btn" onclick="Marketplace.filterStock('texture', this)">تکسچر</button>
+          <button class="stock-filter-btn" onclick="Marketplace.filterStock('logo', this)">لوگو</button>
+          <button class="stock-filter-btn" onclick="Marketplace.filterStock('icon', this)">آیکون</button>
+        </div>
+        <div id="marketplace-stock-grid" class="stock-images-grid"></div>
+        <div id="marketplace-stock-loading" class="text-center py-4 hidden"><div class="spinner-sm"></div></div>
+      </div>
     </div>
   </section>
 
@@ -163,8 +181,14 @@
         </div>
         <!-- Stock Images Section -->
         <div class="dash-card glass" id="stock-section">
-          <h3>📸 تصاویر استوک</h3>
-          <div id="stock-images-count" style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.5rem"></div>
+          <h3>📸 تصاویر استوک <span id="stock-images-count" style="font-size:0.8rem;color:var(--text-secondary)"></span></h3>
+          <input type="text" id="dash-stock-search" class="stock-search" placeholder="جستجو..." oninput="Dashboard.filterStock()" />
+          <div class="stock-filters" id="dash-stock-filters">
+            <button class="stock-filter-btn active" onclick="Dashboard.filterStock('all', this)">همه</button>
+            <button class="stock-filter-btn" onclick="Dashboard.filterStock('background', this)">پس‌زمینه</button>
+            <button class="stock-filter-btn" onclick="Dashboard.filterStock('vector', this)">وکتور</button>
+            <button class="stock-filter-btn" onclick="Dashboard.filterStock('pattern', this)">پترن</button>
+          </div>
           <div id="stock-images-grid" class="stock-images-grid"></div>
         </div>
         <div class="dash-card glass full-width">
@@ -675,14 +699,14 @@
 <!-- Supabase CDN -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- App Scripts (order matters) -->
-<script src="js/config.js?v=6"></script>
-<script src="js/auth.js?v=6"></script>
-<script src="js/cart.js?v=6"></script>
-<script src="js/marketplace.js?v=6"></script>
-<script src="js/dashboard.js?v=6"></script>
-<script src="js/admin.js?v=6"></script>
-<script src="js/portfolio.js?v=6"></script>
-<script src="js/app.js?v=6"></script>
-<script src="js/nash-agents.js?v=6"></script>
+<script src="js/config.js?v=7"></script>
+<script src="js/auth.js?v=7"></script>
+<script src="js/cart.js?v=7"></script>
+<script src="js/marketplace.js?v=7"></script>
+<script src="js/dashboard.js?v=7"></script>
+<script src="js/admin.js?v=7"></script>
+<script src="js/portfolio.js?v=7"></script>
+<script src="js/app.js?v=7"></script>
+<script src="js/nash-agents.js?v=7"></script>
 </body>
 </html>

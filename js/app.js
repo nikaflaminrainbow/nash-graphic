@@ -52,7 +52,11 @@ const App = {
 
     // 11. Hero CTA
     document.getElementById('hero-cta')?.addEventListener('click', () => {
-      Modal.open('auth');
+      if (State.user) {
+        Router.navigate('marketplace');
+      } else {
+        Modal.open('auth');
+      }
     });
 
     // 12. Upload design button

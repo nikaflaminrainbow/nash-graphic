@@ -148,7 +148,7 @@ def insert_image(supabase, image_data):
         'category': image_data.get('category', 'general'),
         'tags': image_data.get('tags', []),
         'is_free': image_data.get('is_free', False),
-        'is_approved': image_data.get('is_free', False),  # Free images auto-approved
+        'is_approved': True,
         'views': 0,
         'downloads_count': 0,
     }

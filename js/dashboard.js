@@ -546,6 +546,8 @@ const Dashboard = {
   /* ═══════════════════════════════════════════════════
      STOCK IMAGES for Designer Dashboard
   ════════════════════════════════════════════════════ */
+  var _stockImages = [];
+  var _stockFiltered = [];
   async function loadStockImages() {
     const grid = document.getElementById('stock-images-grid');
     if (!grid) return;
@@ -567,32 +569,9 @@ const Dashboard = {
         return;
       }
       
-      grid.innerHTML = data.map(img => `
-        <div class="dash-card glass stock-card" data-id="${img.id}">
-          <div class="stock-preview">
-            <img src="${img.preview_url || img.thumbnail_url}" alt="${img.title}" 
-                 loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--radius-sm)" />
-            <div class="stock-watermark">${t('watermark') || 'Nash Graphic'}</div>
-          </div>
-          <h4 class="stock-title">${(img.title || '').slice(0, 40)}</h4>
-          <div class="stock-meta">
-            <span class="stock-price">${(img.price || 100000).toLocaleString('fa-IR')} تومان</span>
-            <span class="stock-source">${img.source === 'vecteezy' ? '🟢 Vecteezy' : '🔵 Freepik'}</span>
-          </div>
-          <div class="stock-actions">
-            <button class="btn btn-primary btn-sm" style="flex:1" onclick="StockImages.buy('${img.id}')">
-              🛒 ${t('buy') || 'خرید'}
-            </button>
-            <button class="btn btn-outline btn-sm" onclick="StockImages.download('${img.id}')">
-              ⬇️ ${t('original') || 'فایل اصلی'}
-            </button>
-          </div>
-        </div>
-      `).join('');
-      
-      // Update admin count if admin
-      const countEl = document.getElementById('stock-images-count');
-      if (countEl) countEl.textContent = data.length;
+      _stockImages = data || [];
+      _stockFiltered = [..._stockImages];
+      _renderStockGrid();
       
     } catch (err) {
       console.warn('Stock images load error:', err);
@@ -600,6 +579,49 @@ const Dashboard = {
     }
   }
   
+  function filterStock(category, btn) {
+    if (btn) {
+      btn.closest('.stock-filters').querySelectorAll('.stock-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+    }
+    var search = (document.getElementById('dash-stock-search') || {}).value || '';
+    search = search.toLowerCase();
+    var cat = category || 'all';
+    _stockFiltered = _stockImages.filter(function(img) {
+      var matchCat = cat === 'all' || (img.category || '').toLowerCase() === cat;
+      var matchSearch = !search || (img.title || '').toLowerCase().indexOf(search) >= 0 || (img.category || '').toLowerCase().indexOf(search) >= 0;
+      return matchCat && matchSearch;
+    });
+    _renderStockGrid();
+  }
+
+  function _renderStockGrid() {
+    var grid = document.getElementById('stock-images-grid');
+    if (!grid) return;
+    var data = _stockFiltered;
+    if (!data || data.length === 0) {
+      grid.innerHTML = '<p class="empty-state">تصویری یافت نشد</p>';
+      return;
+    }
+    grid.innerHTML = data.map(function(img) {
+      return '<div class="stock-card" data-id="' + img.id + '">' +
+        '<div class="stock-preview">' +
+          '<img src="' + (img.preview_url || img.thumbnail_url) + '" alt="' + (img.title || '') + '" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--radius-sm)" />' +
+        '</div>' +
+        '<h4 class="stock-title">' + (img.title || '').slice(0, 40) + '</h4>' +
+        '<div class="stock-meta">' +
+          '<span class="stock-price">' + (img.price || 100000).toLocaleString('fa-IR') + ' تومان</span>' +
+          '<span class="stock-source">' + (img.source === 'vecteezy' ? '🟢 Vecteezy' : '🔵 Freepik') + '</span>' +
+        '</div>' +
+        '<div class="stock-actions">' +
+          '<button class="btn btn-primary btn-sm" style="flex:1" onclick="StockImages.buy(\'' + img.id + '\')">🛒 خرید</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    var countEl = document.getElementById('stock-images-count');
+    if (countEl) countEl.textContent = '(' + data.length + ')';
+  }
+
   function buyStockImage(id) {
     if (typeof Cart === 'undefined') return;
     Cart.add({
@@ -630,7 +652,7 @@ const Dashboard = {
   Dashboard.buyStockImage = buyStockImage;
   Dashboard.downloadStockOriginal = downloadStockOriginal;
   
-  window.StockImages = { load: loadStockImages, buy: buyStockImage, download: downloadStockOriginal };
+  window.StockImages = { load: loadStockImages, buy: buyStockImage, download: downloadStockOriginal, filter: filterStock };
   
   document.addEventListener('DOMContentLoaded', () => {
     if (typeof Router !== 'undefined') {
