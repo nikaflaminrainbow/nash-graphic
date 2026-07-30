@@ -18,7 +18,7 @@ const i18n = {
     about: 'درباره ما', blog: 'وبلاگ', faq: 'سوالات متداول',
     legal: 'قوانین', support: 'پشتیبانی', tracking: 'پیگیری سفارش',
     profile: 'پروفایل', adminPanel: 'پنل ادمین',
-    designerDashboard: 'داشبورد طراح', printerDashboard: 'داشبورد چاپخانه',
+    designerDashboard: 'بازارچه', printerDashboard: 'سفارش طراحی',
     // Auth
     login: 'ورود', logout: 'خروج', register: 'ثبت‌نام',
     loginAsGuest: 'ورود به عنوان مهمان',
@@ -246,7 +246,7 @@ const i18n = {
     about: 'About', blog: 'Blog', faq: 'FAQ',
     legal: 'Legal', support: 'Support', tracking: 'Order Tracking',
     profile: 'Profile', adminPanel: 'Admin Panel',
-    designerDashboard: 'Designer Dashboard', printerDashboard: 'Printer Dashboard',
+    designerDashboard: 'Marketplace', printerDashboard: 'Design Order',
     login: 'Login', logout: 'Logout', register: 'Register',
     loginAsGuest: 'Continue as Guest',
     forgotPassword: 'Forgot Password',
