@@ -1,55 +1,29 @@
 /* ═══════════════════════════════════════════════════════
-   STOCK IMAGES - Watermark & Filters
+   STOCK IMAGES - Tiled Watermark & Filters
    ══════════════════════════════════════════════════════ */
 
-/* Tiled repeating watermark pattern */
+/* Tiled repeating watermark - covers entire image */
 .stock-preview {
   position: relative;
   overflow: hidden;
 }
 
 .stock-preview::after {
-  content: 'Nash Graphic';
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  font-size: 1rem;
-  font-weight: 700;
-  color: rgba(200, 169, 110, 0.3);
-  text-shadow: 0 0 4px rgba(0,0,0,0.5);
   pointer-events: none;
   z-index: 2;
-  transform: rotate(-30deg);
-  background-image: repeating-linear-gradient(
-    45deg,
-    transparent,
-    transparent 40px,
-    rgba(200, 169, 110, 0.15) 40px,
-    rgba(200, 169, 110, 0.15) 41px
-  ),
-  repeating-linear-gradient(
-    -45deg,
-    transparent,
-    transparent 40px,
-    rgba(200, 169, 110, 0.15) 40px,
-    rgba(200, 169, 110, 0.15) 41px
-  );
-  display: flex;
-  flex-wrap: wrap;
-  align-content: center;
-  justify-content: center;
-  line-height: 3;
-  letter-spacing: 0.5em;
-  word-spacing: 0.3em;
-  padding: 10px;
-  text-align: center;
-  overflow: hidden;
-  white-space: normal;
-  word-break: break-all;
+  background-image: 
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='100'%3E%3Ctext x='10' y='50' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='rgba(200,169,110,0.3)' transform='rotate(-30 100 50)'%3ENash Graphic%3C/text%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px 100px;
 }
 
+/* Stock images grid */
 .stock-images-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -79,15 +53,12 @@
   font-weight: 600;
 }
 
-.stock-source {
-  color: var(--text-secondary);
-}
-
 .stock-actions {
   display: flex;
   gap: 0.5rem;
 }
 
+/* Filter buttons */
 .stock-filters {
   display: flex;
   gap: 0.5rem;
@@ -113,6 +84,7 @@
   border-color: #c8a96e;
 }
 
+/* Search input */
 .stock-search {
   width: 100%;
   padding: 0.5rem 1rem;

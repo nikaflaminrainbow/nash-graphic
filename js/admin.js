@@ -51,6 +51,7 @@ const Admin = {
       case 'blog':       Admin.renderBlog();       break;
       case 'faq':        Admin.renderFaq();        break;
       case 'tickets':    Admin.renderTickets();    break;
+      case 'agent':      Agent.render();          break;
     }
   },
 
