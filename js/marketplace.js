@@ -463,8 +463,10 @@ const Marketplace = {
 
   // ─── STOCK IMAGES ──────────────────────────────────────
   async loadStockImages() {
+    // Wait for DOM to be ready
+    await new Promise(function(r) { setTimeout(r, 300); });
     var grid = document.getElementById('marketplace-stock-grid');
-    if (!grid) return;
+    if (!grid) { console.warn('stock grid not found'); return; }
     try {
       var result = await supabase.from('stock_images').select('*').eq('is_approved', true).order('created_at', { ascending: false }).limit(20);
       if (result.error) throw result.error;
@@ -472,7 +474,8 @@ const Marketplace = {
       Marketplace._stockFiltered = Marketplace._stockImages.slice();
       Marketplace.renderStockGrid();
     } catch (err) {
-      grid.innerHTML = '<p class="empty-state">خطا در بارگذاری</p>';
+      console.error('Stock load error:', err);
+      grid.innerHTML = '<p class="empty-state">خطا در بارگذاری: ' + (err.message || '') + '</p>';
     }
   },
 
@@ -488,7 +491,7 @@ const Marketplace = {
         '</div>' +
         '<div style="padding:0.75rem"><h4 style="margin:0 0 0.5rem;font-size:0.9rem">' + (img.title || '').slice(0, 40) + '</h4>' +
         '<div style="display:flex;justify-content:space-between"><span style="color:#c8a96e;font-weight:600">' + (img.price || 100000).toLocaleString('fa-IR') + ' تومان</span>' +
-        '<span style="font-size:0.75rem;color:var(--text-secondary)">' + (img.source === 'vecteezy' ? '🟢' : '🔵') + '</span></div></div></div>';
+        '<span style="font-size:0.75rem;color:var(--text-secondary)"></span></div></div></div>';
     }).join('');
   },
 

@@ -611,7 +611,7 @@ const Dashboard = {
         '<h4 class="stock-title">' + (img.title || '').slice(0, 40) + '</h4>' +
         '<div class="stock-meta">' +
           '<span class="stock-price">' + (img.price || 100000).toLocaleString('fa-IR') + ' تومان</span>' +
-          '<span class="stock-source">' + (img.source === 'vecteezy' ? '🟢 Vecteezy' : '🔵 Freepik') + '</span>' +
+          '' +
         '</div>' +
         '<div class="stock-actions">' +
           '<button class="btn btn-primary btn-sm" style="flex:1" onclick="StockImages.buy(\'' + img.id + '\')">🛒 خرید</button>' +
