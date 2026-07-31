@@ -14,11 +14,23 @@ import urllib.parse
 from datetime import datetime
 
 # --- Config ---
-SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
-SUPABASE_KEY = os.environ.get('SUPABASE_KEY', '')
+import re as _re
+def _load_supabase_config():
+    try:
+        with open('js/config.js', 'r') as f:
+            c = f.read()
+        url_m = _re.search(r'SUPABASE_URL.*?\'(.*?)\'', c)
+        key_m = _re.search(r'SUPABASE_ANON.*?\'(.*?)\'', c)
+        return (url_m.group(1) if url_m else ''), (key_m.group(1) if key_m else '')
+    except:
+        return '', ''
+
+_cfg = _load_supabase_config()
+SUPABASE_URL = os.environ.get('SUPABASE_URL', '') or _cfg[0]
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY', '') or _cfg[1]
 DEFAULT_PRICE = 100000  # 100,000 تومان
 WATERMARK_TEXT = "Nash Graphic"
-MAX_IMAGES_PER_SOURCE = 10  # Limit to avoid spam
+MAX_IMAGES_PER_SOURCE = 15  # Limit to avoid spam
 USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 # Sources to scrape
@@ -26,12 +38,34 @@ SOURCES = {
     'freepik': {
         'base': 'https://www.freepik.com',
         'search': 'https://www.freepik.com/search?format=search&query={query}',
-        'queries': ['background', 'vector', 'pattern', 'texture', 'logo', 'poster', 'banner', 'icon'],
+        'queries': [
+            'background', 'vector', 'pattern', 'texture', 'logo', 
+            'poster', 'banner', 'icon', 'abstract', 'geometric',
+            'floral', 'nature', 'business', 'minimal', 'modern',
+            'gradient', 'colorful', 'dark', 'light', 'gold',
+            'luxury', 'elegant', 'creative', 'artistic', 'paper',
+            'cardboard', 'packaging', 'label', 'sticker', 'branding'
+        ],
     },
     'vecteezy': {
         'base': 'https://www.vecteezy.com',
         'search': 'https://www.vecteezy.com/free-vector/{query}',
-        'queries': ['background', 'vector', 'pattern', 'texture', 'logo', 'poster', 'banner', 'icon'],
+        'queries': [
+            'background', 'vector', 'pattern', 'texture', 'logo', 
+            'poster', 'banner', 'icon', 'abstract', 'geometric',
+            'floral', 'nature', 'business', 'minimal', 'modern',
+            'gradient', 'colorful', 'dark', 'light', 'gold',
+            'luxury', 'elegant', 'creative', 'artistic', 'paper',
+            'cardboard', 'packaging', 'label', 'sticker', 'branding'
+        ],
+    },
+    'pexels': {
+        'base': 'https://www.pexels.com',
+        'search': 'https://www.pexels.com/search/{query}/',
+        'queries': [
+            'background', 'texture', 'pattern', 'abstract', 'nature',
+            'business', 'creative', 'design', 'art', 'color'
+        ],
     }
 }
 
