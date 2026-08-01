@@ -596,13 +596,16 @@ const Marketplace = {
         : '<button class="btn btn-primary" onclick="Marketplace.buyStock(\'' + img.id + '\')" style="margin:0.5rem">🛒 افزودن به سبد خرید</button>';
       contentEl.innerHTML =
         '<div style="padding:1rem">' +
-          '<img src="' + (img.preview_url||img.thumbnail_url) + '" style="width:100%;max-height:400px;object-fit:cover;border-radius:var(--radius)" />' +
-          '<h3 style="margin:1rem 0 0.5rem">' + (img.title||'تصویر استوک') + '</h3>' +
-          '<div style="display:flex;gap:1rem;flex-wrap:wrap;margin:0.5rem 0">' +
+          '<div class="stock-preview" style="position:relative;overflow:hidden;border-radius:var(--radius);margin-bottom:1rem">' +
+            '<img src="' + (img.preview_url||img.thumbnail_url) + '" style="width:100%;max-height:400px;object-fit:cover" />' +
+          '</div>' +
+          '<h3 style="margin:0 0 0.5rem">' + (img.title||'تصویر استوک') + '</h3>' +
+          '<div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin:0.5rem 0">' +
             '<span style="background:rgba(200,169,110,0.15);padding:0.25rem 0.75rem;border-radius:20px;font-size:0.8rem;color:#c8a96e">📁 ' + (img.category||'بدون دسته') + '</span>' +
             '<span style="background:rgba(100,200,255,0.15);padding:0.25rem 0.75rem;border-radius:20px;font-size:0.8rem;color:#64c8ff">🌐 ' + (img.source||'') + '</span>' +
           '</div>' +
           '<p style="color:#c8a96e;font-size:1.3rem;font-weight:700;margin:1rem 0">' + priceText + '</p>' +
+          '<div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.75rem">⬇️ فایل دانلودی بدون واترمارک و با کیفیت اصلی خواهد بود</div>' +
           '<div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap">' + actionBtn + '</div>' +
         '</div>';
       modal.classList.remove('hidden');
