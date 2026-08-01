@@ -366,7 +366,7 @@
         <button class="tab-btn" onclick="Admin.showTab('tickets')">تیکت‌ها</button>
         <button class="tab-btn" onclick="Admin.showTab('stock')">💰 استاک قیمت</button>
         <button class="tab-btn" onclick="Admin.showTab('agent')">🤖 Agent</button>
-        <button class="tab-btn" onclick="Admin.showTab('payment')">💳 بنرداخت</button>
+        <button class="tab-btn" onclick="Admin.showTab('payment')">💳 پرداخت</button>
       </div>
       <div id="admin-content" class="admin-content glass"></div>
     </div>
@@ -627,7 +627,7 @@
     <div id="cart-items"></div>
     <div class="cart-footer">
       <div class="cart-total"><span data-i18n="total">جمع کل</span>: <span id="cart-total">۰</span> <span data-i18n="toman">تومان</span></div>
-      <button class="btn btn-primary" onclick="Cart.checkout()" data-i18n="payAndOrder">بنرداخت و ثبت سفارش</button>
+      <button class="btn btn-primary" onclick="Cart.checkout()" data-i18n="payAndOrder">پرداخت و ثبت سفارش</button>
     </div>
   </div>
 </div>
@@ -636,7 +636,7 @@
 <div id="modal-checkout" class="modal-overlay hidden">
   <div class="modal glass" style="max-width:420px">
     <button class="modal-close" onclick="Modal.close('checkout')">✕</button>
-    <h3 id="checkout-modal-title" style="text-align:center;margin-bottom:1rem">💳 بنرداخت و تکمیل سفارش</h3>
+    <h3 id="checkout-modal-title" style="text-align:center;margin-bottom:1rem">💳 پرداخت و تکمیل سفارش</h3>
     
     <!-- Card Info -->
     <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem;text-align:center">
@@ -648,7 +648,7 @@
     
     <!-- Amount -->
     <div style="background:rgba(200,169,110,0.1);border:1px solid rgba(200,169,110,0.3);border-radius:8px;padding:0.75rem;text-align:center;margin-bottom:1rem">
-      <div style="font-size:0.8rem;color:var(--text-secondary)">مبلغ قابل بنرداخت</div>
+      <div style="font-size:0.8rem;color:var(--text-secondary)">مبلغ قابل پرداخت</div>
       <div id="payment-amount" style="font-size:1.5rem;font-weight:700;color:#c8a96e">۰ تومان</div>
     </div>
 
@@ -658,16 +658,16 @@
     
     <!-- Receipt Upload -->
     <div style="margin-top:0.75rem">
-      <label style="font-size:0.85rem;color:var(--text-secondary);display:block;margin-bottom:0.3rem">📸 رسید بنرداخت (اختیاری)</label>
+      <label style="font-size:0.85rem;color:var(--text-secondary);display:block;margin-bottom:0.3rem">📸 رسید پرداخت (اختیاری)</label>
       <input id="checkout-receipt" type="file" accept="image/*" class="input" style="padding:0.5rem" />
       <div id="receipt-preview" style="margin-top:0.3rem"></div>
     </div>
 
     <!-- Instructions -->
     <div style="background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:8px;padding:0.75rem;margin-top:0.75rem;font-size:0.8rem;color:var(--text-secondary);line-height:1.8">
-      <strong style="color:#4CAF50">راهنمای بنرداخت:</strong><br>
+      <strong style="color:#4CAF50">راهنمای پرداخت:</strong><br>
       ۱. مبلغ رو به شماره کارت بالا واریز کنید<br>
-      ۲. رسید بنرداخت رو آپلود کنید (اختیاری)<br>
+      ۲. رسید پرداخت رو آپلود کنید (اختیاری)<br>
       ۳. روی "تأیید و ارسال سفارش" کلیک کنید<br>
       ۴. سفارش شما بررسی و تأیید می‌شه ✅
     </div>
