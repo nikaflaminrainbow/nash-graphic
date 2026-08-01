@@ -527,7 +527,7 @@ const Marketplace = {
     var grid = document.getElementById('marketplace-stock-grid');
     if (!grid) { console.warn('stock grid not found'); return; }
     try {
-      var result = await supabase.from('stock_images').select('*').eq('is_approved', true).order('created_at', { ascending: false }).limit(20);
+      var result = await supabase.from('stock_images').select('*').eq('is_approved', true).order('created_at', { ascending: false }).limit(100);
       if (result.error) throw result.error;
       Marketplace._stockImages = result.data || [];
       Marketplace._stockFiltered = Marketplace._stockImages.slice();
@@ -587,25 +587,25 @@ const Marketplace = {
   openStockImage: function(id) {
     supabase.from('stock_images').select('*').eq('id', id).single().then(function(r) {
       var img = r.data; if (!img) return;
-      var modal = document.getElementById('design-modal'); if (!modal) return;
+      var modal = document.getElementById('modal-design'); if (!modal) return;
+      var contentEl = document.getElementById('design-detail-content'); if (!contentEl) return;
       var isFree = !img.price || img.price === 0;
       var priceText = isFree ? '🆓 رایگان' : (img.price||0).toLocaleString('fa-IR') + ' تومان';
       var actionBtn = isFree
         ? '<a href="' + (img.download_url || '#') + '" download class="btn btn-success" style="display:inline-block;text-decoration:none;margin:0.5rem">⬇️ دانلود فایل اصلی</a>'
         : '<button class="btn btn-primary" onclick="Marketplace.buyStock(\'' + img.id + '\')" style="margin:0.5rem">🛒 افزودن به سبد خرید</button>';
-      modal.querySelector('.modal-body').innerHTML =
-        '<div>' +
+      contentEl.innerHTML =
+        '<div style="padding:1rem">' +
           '<img src="' + (img.preview_url||img.thumbnail_url) + '" style="width:100%;max-height:400px;object-fit:cover;border-radius:var(--radius)" />' +
           '<h3 style="margin:1rem 0 0.5rem">' + (img.title||'تصویر استوک') + '</h3>' +
           '<div style="display:flex;gap:1rem;flex-wrap:wrap;margin:0.5rem 0">' +
             '<span style="background:rgba(200,169,110,0.15);padding:0.25rem 0.75rem;border-radius:20px;font-size:0.8rem;color:#c8a96e">📁 ' + (img.category||'بدون دسته') + '</span>' +
             '<span style="background:rgba(100,200,255,0.15);padding:0.25rem 0.75rem;border-radius:20px;font-size:0.8rem;color:#64c8ff">🌐 ' + (img.source||'') + '</span>' +
-            '<span style="background:rgba(76,175,80,0.15);padding:0.25rem 0.75rem;border-radius:20px;font-size:0.8rem;color:#4CAF50">📋 ' + (img.is_approved ? 'تأیید شده' : 'در انتظار') + '</span>' +
           '</div>' +
           '<p style="color:#c8a96e;font-size:1.3rem;font-weight:700;margin:1rem 0">' + priceText + '</p>' +
           '<div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap">' + actionBtn + '</div>' +
         '</div>';
-      modal.classList.add('active');
+      modal.classList.remove('hidden');
     });
   },
 
@@ -616,7 +616,7 @@ const Marketplace = {
         toast('افزودن به سبد خرید ✅', 'success');
       }
     });
-    var m = document.getElementById('design-modal'); if (m) m.classList.remove('active');
+    var m = document.getElementById('modal-design'); if (m) m.classList.add('hidden');
   }
 }
 

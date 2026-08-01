@@ -229,7 +229,7 @@ def collect_from_source(source_name, source_config):
     log(f"Collecting from {source_name}...")
     
     all_images = []
-    for query in source_config['queries'][:3]:  # Limit to 3 queries per run
+    for query in source_config['queries'][:10]:  # Limit to 3 queries per run
         url = source_config['search'].format(query=query)
         log(f"  Fetching: {url}")
         
