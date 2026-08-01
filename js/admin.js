@@ -1261,8 +1261,7 @@ const Admin = {
       await DB.update('tickets', id, { status: tk?.status==='open'?'closed':'open' });
       Admin.renderTickets();
     } catch (err) { toast(err.message,'error'); }
-  }
-
+  },
 
   // ═══════════════════════════════════════
   //  STOCK IMAGE PRICE EDITOR
