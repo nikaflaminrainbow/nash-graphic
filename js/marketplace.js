@@ -594,18 +594,29 @@ const Marketplace = {
       var actionBtn = isFree
         ? '<a href="' + (img.download_url || '#') + '" download class="btn btn-success" style="display:inline-block;text-decoration:none;margin:0.5rem">⬇️ دانلود فایل اصلی</a>'
         : '<button class="btn btn-primary" onclick="Marketplace.buyStock(\'' + img.id + '\')" style="margin:0.5rem">🛒 افزودن به سبد خرید</button>';
+      var src = img.preview_url || img.thumbnail_url || '';
+      var srcLarge = src.replace('/medium/', '/large/').replace('/small/', '/large/');
       contentEl.innerHTML =
         '<div style="padding:1rem">' +
           '<div class="stock-preview" style="position:relative;overflow:hidden;border-radius:var(--radius);margin-bottom:1rem">' +
-            '<img src="' + (img.preview_url||img.thumbnail_url) + '" style="width:100%;max-height:400px;object-fit:cover" />' +
+            '<img src="' + srcLarge + '" style="width:100%;max-height:500px;object-fit:cover" />' +
           '</div>' +
-          '<h3 style="margin:0 0 0.5rem">' + (img.title||'تصویر استوک') + '</h3>' +
-          '<div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin:0.5rem 0">' +
-            '<span style="background:rgba(200,169,110,0.15);padding:0.25rem 0.75rem;border-radius:20px;font-size:0.8rem;color:#c8a96e">📁 ' + (img.category||'بدون دسته') + '</span>' +
-            '<span style="background:rgba(100,200,255,0.15);padding:0.25rem 0.75rem;border-radius:20px;font-size:0.8rem;color:#64c8ff">🌐 ' + (img.source||'') + '</span>' +
+          '<h2 style="margin:0 0 0.75rem;font-size:1.2rem;line-height:1.6">' + (img.title||'تصویر استوک') + '</h2>' +
+          '<div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1rem">' +
+            '<span style="background:rgba(200,169,110,0.15);padding:0.3rem 0.8rem;border-radius:20px;font-size:0.85rem;color:#c8a96e">📁 ' + (img.category||'بدون دسته') + '</span>' +
+            '<span style="background:rgba(100,200,255,0.15);padding:0.3rem 0.8rem;border-radius:20px;font-size:0.85rem;color:#64c8ff">🌐 ' + (img.source||'') + '</span>' +
           '</div>' +
-          '<p style="color:#c8a96e;font-size:1.3rem;font-weight:700;margin:1rem 0">' + priceText + '</p>' +
-          '<div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.75rem">⬇️ فایل دانلودی بدون واترمارک و با کیفیت اصلی خواهد بود</div>' +
+          '<table style="width:100%;font-size:0.85rem;margin-bottom:1rem;border-collapse:collapse">' +
+            '<tr><td style="padding:0.4rem;color:var(--text-secondary)">نام فایل</td><td style="padding:0.4rem;text-align:left;direction:ltr">' + (img.title||'-') + '</td></tr>' +
+            '<tr><td style="padding:0.4rem;color:var(--text-secondary)">دسته‌بندی</td><td style="padding:0.4rem">' + (img.category||'-') + '</td></tr>' +
+            '<tr><td style="padding:0.4rem;color:var(--text-secondary)">منبع</td><td style="padding:0.4rem">' + (img.source||'-') + '</td></tr>' +
+            '<tr><td style="padding:0.4rem;color:var(--text-secondary)">کیفیت</td><td style="padding:0.4rem">🖥️ Large (1920px+)</td></tr>' +
+            '<tr><td style="padding:0.4rem;color:var(--text-secondary)">فرمت</td><td style="padding:0.4rem">📷 JPG / PNG</td></tr>' +
+            '<tr><td style="padding:0.4rem;color:var(--text-secondary)">قیمت</td><td style="padding:0.4rem;color:#c8a96e;font-weight:700">' + priceText + '</td></tr>' +
+          '</table>' +
+          '<div style="background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:8px;padding:0.75rem;font-size:0.8rem;color:var(--text-secondary);margin-bottom:1rem">' +
+            '⬇️ فایل دانلودی <strong style="color:#4CAF50">بدون واترمارک</strong> و با <strong style="color:#4CAF50">کیفیت اصلی</strong> خواهد بود' +
+          '</div>' +
           '<div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap">' + actionBtn + '</div>' +
         '</div>';
       modal.classList.remove('hidden');
