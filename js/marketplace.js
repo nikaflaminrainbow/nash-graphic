@@ -13,13 +13,11 @@ const Marketplace = {
   async load() {
     try { showLoading(true); } catch(e) {}
     try {
-      await Promise.allSettled([
-        Marketplace.loadCategories(),
-        Marketplace.loadDesigns(),
-        Marketplace.loadStockImages()
-      ]);
+      Marketplace.loadCategories();
+      Marketplace.loadDesigns();
+      Marketplace.loadStockImages();
     } catch(e) { console.error('Marketplace load error:', e); }
-    try { showLoading(false); } catch(e) {}
+    setTimeout(function() { try { showLoading(false); } catch(e) {} }, 500);
   },
 
   // ─── LOAD CATEGORIES ───────────────────────────────────────
@@ -520,19 +518,16 @@ const Marketplace = {
 ,
 
   // ─── STOCK IMAGES ──────────────────────────────────────
-  async loadStockImages() {
-    await new Promise(function(r) { setTimeout(r, 200); });
+  loadStockImages: function() {
     var grid = document.getElementById('marketplace-stock-grid');
     if (!grid) return;
-    try {
-      var result = await supabase.from('stock_images').select('*').eq('is_approved', true).order('created_at', { ascending: false }).limit(100);
+    if (typeof supabase === 'undefined') { setTimeout(function(){ Marketplace.loadStockImages(); }, 500); return; }
+    supabase.from('stock_images').select('*').eq('is_approved', true).order('created_at', { ascending: false }).limit(100).then(function(result) {
       if (result.error) { console.error('Stock error:', result.error); return; }
       Marketplace._stockImages = result.data || [];
       Marketplace._stockFiltered = Marketplace._stockImages.slice();
       Marketplace.renderStockGrid();
-    } catch (err) {
-      console.error('Stock load error:', err);
-    }
+    }).catch(function(err) { console.error('Stock load error:', err); });
   },
 
   renderStockGrid: function() {
