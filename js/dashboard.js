@@ -624,12 +624,13 @@ const Dashboard = {
 
   function buyStockImage(id) {
     if (typeof Cart === 'undefined') return;
+    var imgData = _stockImages.find(function(i) { return i.id === id; }) || {};
     Cart.addItem({
       id: 'stock_' + id,
       type: 'stock_image',
-      title: document.querySelector(`[data-id="${id}"] .stock-title`)?.textContent || 'Stock Image',
-      price: parseInt(document.querySelector(`[data-id="${id}"] .stock-price`)?.textContent?.replace(/[^0-9]/g, '') || '100000'),
-      image: document.querySelector(`[data-id="${id}"] .stock-preview img`)?.src || '',
+      name: imgData.title || 'تصویر استوک',
+      price: imgData.price || 0,
+      thumbnail_url: imgData.thumbnail_url || '',
     });
     toast('افزودن به سبد خرید ✅', 'success');
     Router.navigate('cart');

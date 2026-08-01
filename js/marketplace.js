@@ -544,13 +544,19 @@ const Marketplace = {
     var data = Marketplace._stockFiltered;
     if (!data || data.length === 0) { grid.innerHTML = '<p class="empty-state">تصویری یافت نشد</p>'; return; }
     grid.innerHTML = data.map(function(img) {
+      var isFree = !img.price || img.price === 0;
+      var priceText = isFree ? '🆓 رایگان' : (img.price || 0).toLocaleString('fa-IR') + ' تومان';
+      var btnHtml = isFree
+        ? '<a href="' + (img.download_url || '#') + '" download onclick="event.stopPropagation()" class="btn btn-success btn-sm" style="flex:1;text-align:center;text-decoration:none">⬇️ دانلود رایگان</a>'
+        : '<button class="btn btn-primary btn-sm" style="flex:1" onclick="event.stopPropagation();Marketplace.buyStock(\'' + img.id + '\')">🛒 خرید</button>';
       return '<div class="design-card" onclick="Marketplace.openStockImage(\'' + img.id + '\')">' +
         '<div class="stock-preview" style="position:relative;overflow:hidden;border-radius:var(--radius) var(--radius) 0 0">' +
           '<img src="' + (img.preview_url || img.thumbnail_url) + '" alt="' + (img.title || '') + '" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover" />' +
         '</div>' +
         '<div style="padding:0.75rem"><h4 style="margin:0 0 0.5rem;font-size:0.9rem">' + (img.title || '').slice(0, 40) + '</h4>' +
-        '<div style="display:flex;justify-content:space-between"><span style="color:#c8a96e;font-weight:600">' + (img.price || 100000).toLocaleString('fa-IR') + ' تومان</span>' +
-        '<span style="font-size:0.75rem;color:var(--text-secondary)"></span></div></div></div>';
+        '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#c8a96e;font-weight:600">' + priceText + '</span></div>' +
+        '<div style="display:flex;gap:0.5rem;margin-top:0.5rem">' + btnHtml + '</div>' +
+        '</div></div>';
     }).join('');
   },
 
@@ -568,11 +574,24 @@ const Marketplace = {
     supabase.from('stock_images').select('*').eq('id', id).single().then(function(r) {
       var img = r.data; if (!img) return;
       var modal = document.getElementById('design-modal'); if (!modal) return;
-      modal.querySelector('.modal-body').innerHTML = '<div style="text-align:center"><img src="' + (img.preview_url||img.thumbnail_url) + '" style="max-width:100%;border-radius:var(--radius)" /><h3 style="margin-top:1rem">' + (img.title||'') + '</h3><p style="color:#c8a96e;font-size:1.2rem;font-weight:600">' + (img.price||100000).toLocaleString('fa-IR') + ' تومان</p><button class="btn btn-primary" onclick="Marketplace.buyStock(\'' + img.id + '\')">🛒 خرید</button></div>';
+      var isFree = !img.price || img.price === 0;
+      var priceText = isFree ? '🆓 رایگان' : (img.price||0).toLocaleString('fa-IR') + ' تومان';
+      var actionBtn = isFree
+        ? '<a href="' + (img.download_url || '#') + '" download class="btn btn-success" style="display:inline-block;text-decoration:none">⬇️ دانلود رایگان</a>'
+        : '<button class="btn btn-primary" onclick="Marketplace.buyStock(\'' + img.id + '\')">🛒 خرید</button>';
+      modal.querySelector('.modal-body').innerHTML = '<div style="text-align:center"><img src="' + (img.preview_url||img.thumbnail_url) + '" style="max-width:100%;border-radius:var(--radius)" /><h3 style="margin-top:1rem">' + (img.title||'') + '</h3><p style="color:#c8a96e;font-size:1.2rem;font-weight:600">' + priceText + '</p><p style="color:var(--text-secondary);font-size:0.85rem">منبع: ' + (img.source||'') + '</p>' + actionBtn + '</div>';
       modal.classList.add('active');
     });
   },
 
-  buyStock: function(id) { toast('افزودن به سبد خرید ✅', 'success'); var m = document.getElementById('design-modal'); if (m) m.classList.remove('active'); }
+  buyStock: function(id) {
+    Marketplace._stockImages.forEach(function(img) {
+      if (img.id === id) {
+        Cart.addItem({ id: img.id, name: img.title, price: img.price || 0, type: 'stock', thumbnail_url: img.thumbnail_url });
+        toast('افزودن به سبد خرید ✅', 'success');
+      }
+    });
+    var m = document.getElementById('design-modal'); if (m) m.classList.remove('active');
+  }
 }
 
