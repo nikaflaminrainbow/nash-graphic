@@ -52,6 +52,7 @@ const Admin = {
       case 'faq':        Admin.renderFaq();        break;
       case 'tickets':    Admin.renderTickets();    break;
       case 'agent':      Agent.render();          break;
+      case 'payment':    Agent.renderPayment();    break;
       case 'stock':      Admin.renderStockPrices(); break;
     }
   },
