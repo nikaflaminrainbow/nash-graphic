@@ -30,7 +30,7 @@ SUPABASE_URL = os.environ.get('SUPABASE_URL', '') or _cfg[0]
 SUPABASE_KEY = os.environ.get('SUPABASE_KEY', '') or _cfg[1]
 DEFAULT_PRICE = 0  # رایگان پیش‌فرض  # 100,000 تومان
 WATERMARK_TEXT = "Nash Graphic"
-MAX_IMAGES_PER_SOURCE = 15  # Limit to avoid spam
+MAX_IMAGES_PER_SOURCE = 20  # Limit to avoid spam
 USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 # Sources to scrape
@@ -44,7 +44,18 @@ SOURCES = {
             'floral', 'nature', 'business', 'minimal', 'modern',
             'gradient', 'colorful', 'dark', 'light', 'gold',
             'luxury', 'elegant', 'creative', 'artistic', 'paper',
-            'cardboard', 'packaging', 'label', 'sticker', 'branding'
+            'cardboard', 'packaging', 'label', 'sticker', 'branding',
+            'illustration', 'vintage', 'watercolor', 'mockup', 'template',
+            'card', 'flyer', 'social', 'infographic', 'photo',
+            'handdrawn', 'seamless', 'organic', 'retro', 'cute',
+            'fantasy', 'wedding', 'holiday', 'food', 'travel',
+            'science', 'sports', 'technology', 'kids', 'love',
+            'circle', 'frame', 'border', 'line', 'shape',
+            'letter', 'typography', 'calligraphy', 'ornament',
+            'animal', 'plant', 'fruit', 'flower', 'leaf',
+            'city', 'building', 'sky', 'space', 'fire',
+            'water', 'wood', 'stone', 'marble', 'metal',
+            'fabric', 'leather', 'concrete', 'grunge', 'brush'
         ],
     },
     'vecteezy': {
@@ -56,7 +67,18 @@ SOURCES = {
             'floral', 'nature', 'business', 'minimal', 'modern',
             'gradient', 'colorful', 'dark', 'light', 'gold',
             'luxury', 'elegant', 'creative', 'artistic', 'paper',
-            'cardboard', 'packaging', 'label', 'sticker', 'branding'
+            'cardboard', 'packaging', 'label', 'sticker', 'branding',
+            'illustration', 'vintage', 'watercolor', 'mockup', 'template',
+            'card', 'flyer', 'social', 'infographic', 'photo',
+            'handdrawn', 'seamless', 'organic', 'retro', 'cute',
+            'fantasy', 'wedding', 'holiday', 'food', 'travel',
+            'science', 'sports', 'technology', 'kids', 'love',
+            'circle', 'frame', 'border', 'line', 'shape',
+            'letter', 'typography', 'calligraphy', 'ornament',
+            'animal', 'plant', 'fruit', 'flower', 'leaf',
+            'city', 'building', 'sky', 'space', 'fire',
+            'water', 'wood', 'stone', 'marble', 'metal',
+            'fabric', 'leather', 'concrete', 'grunge', 'brush'
         ],
     },
     'pexels': {
