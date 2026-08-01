@@ -555,11 +555,31 @@ const Marketplace = {
         '</div>' +
         '<div style="padding:0.75rem"><h4 style="margin:0 0 0.5rem;font-size:0.9rem">' + (img.title || '').slice(0, 40) + '</h4>' +
         '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#c8a96e;font-weight:600">' + priceText + '</span></div>' +
-        '<div style="display:flex;gap:0.5rem;margin-top:0.5rem">' + btnHtml + '</div>' +
+        '<div style="display:flex;gap:0.5rem;margin-top:0.5rem;align-items:center"><span style="font-size:0.7rem;color:var(--text-secondary)">' + (Marketplace._catFa[img.category] || img.category || '') + '</span></div>' + '<div style="display:flex;gap:0.5rem;margin-top:0.5rem">' + btnHtml + '</div>' +
         '</div></div>';
     }).join('');
   },
 
+  _catFa: {
+    'background': 'پس‌زمینه', 'vector': 'وکتور', 'pattern': 'پترن', 'texture': 'تکسچر',
+    'logo': 'لوگو', 'icon': 'آیکون', 'illustration': 'ایلاستریشن', 'abstract': 'آبستره',
+    'floral': 'گلدار', 'nature': 'طبیعت', 'business': 'بیزینس', 'minimal': 'مینیمال',
+    'luxury': 'لوکس', 'vintage': 'وینتیج', 'geometric': 'هندسی', 'modern': 'مدرن',
+    'colorful': 'رنگارنگ', 'poster': 'پوستر', 'banner': 'بنر', 'mockup': 'موکاپ',
+    'template': 'قالب', 'card': 'کارت', 'branding': 'برندینگ', 'packaging': 'بسته‌بندی',
+    'label': 'لیبل', 'paper': 'کاغذ', 'watercolor': 'آبرنگ', 'gradient': 'گرادیانت',
+    'dark': 'تاریک', 'gold': 'طلایی'
+  },
+  _catEn: {
+    'پس‌زمینه': 'background', 'وکتور': 'vector', 'پترن': 'pattern', 'تکسچر': 'texture',
+    'لوگو': 'logo', 'آیکون': 'icon', 'ایلاستریشن': 'illustration', 'آبستره': 'abstract',
+    'گلدار': 'floral', 'طبیعت': 'nature', 'بیزینس': 'business', 'مینیمال': 'minimal',
+    'لوکس': 'luxury', 'وینتیج': 'vintage', 'هندسی': 'geometric', 'مدرن': 'modern',
+    'رنگارنگ': 'colorful', 'پوستر': 'poster', 'بنر': 'banner', 'موکاپ': 'mockup',
+    'قالب': 'template', 'کارت': 'card', 'برندینگ': 'branding', 'بسته‌بندی': 'packaging',
+    'لیبل': 'label', 'کاغذ': 'paper', 'آبرنگ': 'watercolor', 'گرادیانت': 'gradient',
+    'تاریک': 'dark', 'طلایی': 'gold'
+  },
   filterStock: function(category, btn) {
     if (btn) { btn.closest('.stock-filters').querySelectorAll('.stock-filter-btn').forEach(function(b){b.classList.remove('active')}); btn.classList.add('active'); }
     var search = ((document.getElementById('stock-search') || {}).value || '').toLowerCase();
@@ -575,9 +595,11 @@ const Marketplace = {
     Marketplace._stockFiltered = Marketplace._stockImages.filter(function(img) {
       var imgCat = (img.category||'').toLowerCase();
       var matchCat = (cat === 'all' || imgCat === cat);
+      var catFa = (Marketplace._catFa[imgCat] || '').toLowerCase();
       var matchSearch = !search ||
         (img.title||'').toLowerCase().indexOf(search) >= 0 ||
-        imgCat.indexOf(search) >= 0;
+        imgCat.indexOf(search) >= 0 ||
+        catFa.indexOf(search) >= 0;
       return matchCat && matchSearch;
     });
     Marketplace.renderStockGrid();
