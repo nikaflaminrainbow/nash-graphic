@@ -13,12 +13,19 @@ var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 // ─── PAYMENT CONFIG (Card to Card) ─────────────────────────
 // Stored in localStorage — admin can change from Admin Panel → تنظیمات پرداخت
 const PAYMENT_DEFAULTS = {
-  card_number:  '۶۰۳۷-۹۹۸۱-۹۳۰۰-۳۴۵۵',
-  card_holder:  'فایزه محمدی',
-  bank_name:    'بانک مسکن',
-  phone:        '۰۹۳۵۱۷۶۰۰۵۴',
-};
-var PAYMENT_CONFIG = JSON.parse(localStorage.getItem('payment_config') || 'null') || PAYMENT_DEFAULTS;
+  card_number: '6037-9981-9300-3455',
+  card_holder: 'فایزه محمدی',
+  bank_name:   'بانک ملی',
+  phone:       '09351760054',
+};;
+var PAYMENT_CONFIG = (function() {
+  try {
+    var stored = JSON.parse(localStorage.getItem('payment_config') || 'null');
+    return stored && typeof stored === 'object' ? Object.assign({}, PAYMENT_DEFAULTS, stored) : PAYMENT_DEFAULTS;
+  } catch(e) {
+    return PAYMENT_DEFAULTS;
+  }
+})();
 
 // ─── I18N DICTIONARY ─────────────────────────────────────────
 const i18n = {

@@ -84,7 +84,7 @@ var Agent = {
     var container = document.getElementById('admin-content');
     if (!container) return;
     
-    var cfg = (typeof PAYMENT_CONFIG !== 'undefined') ? PAYMENT_CONFIG : {};
+    var cfg = (typeof PAYMENT_CONFIG !== 'undefined' && PAYMENT_CONFIG) ? PAYMENT_CONFIG : (typeof window.PAYMENT_CONFIG !== 'undefined' && window.PAYMENT_CONFIG) ? window.PAYMENT_CONFIG : {};
     
     container.innerHTML = 
       '<h3 style="margin-bottom:1rem">💳 تنظیمات پرداخت کارت به کارت</h3>' +
