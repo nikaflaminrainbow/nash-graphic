@@ -563,9 +563,23 @@ const Marketplace = {
   filterStock: function(category, btn) {
     if (btn) { btn.closest('.stock-filters').querySelectorAll('.stock-filter-btn').forEach(function(b){b.classList.remove('active')}); btn.classList.add('active'); }
     var search = ((document.getElementById('stock-search') || {}).value || '').toLowerCase();
-    var cat = category || 'all';
+    var cat = (typeof category === 'string') ? category : 'all';
+    // Get active filter button if no category passed
+    if (cat === 'all') {
+      var activeBtn = document.querySelector('.stock-filter-btn.active');
+      if (activeBtn) {
+        var onclick = activeBtn.getAttribute('onclick') || '';
+        var match = onclick.match(/filterStock\('([^']+)'\)/);
+        if (match && match[1] !== 'all') cat = match[1];
+      }
+    }
     Marketplace._stockFiltered = Marketplace._stockImages.filter(function(img) {
-      return (cat === 'all' || (img.category||'').toLowerCase() === cat) && (!search || (img.title||'').toLowerCase().indexOf(search) >= 0);
+      var matchCat = (cat === 'all' || (img.category||'').toLowerCase() === cat);
+      var matchSearch = !search || 
+        (img.title||'').toLowerCase().indexOf(search) >= 0 || 
+        (img.category||'').toLowerCase().indexOf(search) >= 0 ||
+        (img.source||'').toLowerCase().indexOf(search) >= 0;
+      return matchCat && matchSearch;
     });
     Marketplace.renderStockGrid();
   },
