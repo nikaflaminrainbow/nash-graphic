@@ -30,7 +30,7 @@ const Admin = {
   showTab(tab) {
     Admin._currentTab = tab;
     document.querySelectorAll('.admin-tabs .tab-btn').forEach(b => b.classList.remove('active'));
-    const idx = ['stats','media','users','designs','orders','categories','menu','theme','content','blog','faq','tickets'].indexOf(tab);
+    const idx = ['stats','media','users','designs','orders','categories','menu','theme','content','blog','faq','tickets','stock','agent','payment'].indexOf(tab);
     const btns = document.querySelectorAll('.admin-tabs .tab-btn');
     if (btns[idx]) btns[idx].classList.add('active');
 
@@ -52,6 +52,7 @@ const Admin = {
       case 'faq':        Admin.renderFaq();        break;
       case 'tickets':    Admin.renderTickets();    break;
       case 'agent':      Agent.render();          break;
+      case 'stock':      Admin.renderStockPrices(); break;
     }
   },
 
@@ -1261,5 +1262,69 @@ const Admin = {
       Admin.renderTickets();
     } catch (err) { toast(err.message,'error'); }
   }
+
+
+  // ═══════════════════════════════════════
+  //  STOCK IMAGE PRICE EDITOR
+  // ═══════════════════════════════════════
+  async renderStockPrices() {
+    const el = document.getElementById('admin-content');
+    try {
+      const { data, error } = await supabase.from('stock_images').select('id,title,category,price,preview_url,thumbnail_url').order('created_at', { ascending: false }).limit(200);
+      if (error) throw error;
+      Admin._stockData = data || [];
+      el.innerHTML = `
+        <div class="flex-between" style="margin-bottom:1rem">
+          <h3>💰 قیمت تصاویر استوک (${toFarsiNum(Admin._stockData.length)})</h3>
+          <input id="stock-admin-search" class="input" style="max-width:240px" placeholder="جستجو..." oninput="Admin._filterStockAdmin()" />
+        </div>
+        <p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:1rem">قیمت ۰ = رایگان (دانلود مستقیم). عدد بزرگ‌تر از ۰ = پولی (افزودن به سبد خرید).</p>
+        <div class="admin-table-wrap">
+          <table class="admin-table" id="stock-admin-table">
+            <thead><tr>
+              <th>پیش‌نمایش</th><th>عنوان</th><th>دسته</th><th>قیمت (تومان)</th><th>ذخیره</th>
+            </tr></thead>
+            <tbody>
+              ${(data||[]).map(img => `
+                <tr data-id="${img.id}" data-title="${(img.title||'').toLowerCase()}" data-cat="${(img.category||'').toLowerCase()}">
+                  <td><img src="${img.thumbnail_url||img.preview_url||''}" style="width:60px;height:60px;object-fit:cover;border-radius:6px" onerror="this.style.display='none'" /></td>
+                  <td style="font-size:0.82rem;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${img.title||''}">${img.title||'—'}</td>
+                  <td><span class="badge badge-info">${img.category||'—'}</span></td>
+                  <td><input type="number" min="0" class="input stock-price-input" value="${img.price||0}" style="width:120px;direction:ltr" /></td>
+                  <td><button class="btn btn-sm btn-primary" onclick="Admin.saveStockPrice('${img.id}')">💾 ذخیره</button></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    } catch (err) {
+      el.innerHTML = `<p style="color:var(--danger)">${err.message}</p>`;
+    }
+  },
+
+  _filterStockAdmin() {
+    const q = (document.getElementById('stock-admin-search')?.value || '').toLowerCase().trim();
+    document.querySelectorAll('#stock-admin-table tbody tr').forEach(row => {
+      const t = row.getAttribute('data-title') || '';
+      const c = row.getAttribute('data-cat') || '';
+      row.style.display = (!q || t.indexOf(q) >= 0 || c.indexOf(q) >= 0) ? '' : 'none';
+    });
+  },
+
+  async saveStockPrice(id) {
+    const row = document.querySelector(`#stock-admin-table tr[data-id="${id}"]`);
+    const input = row?.querySelector('.stock-price-input');
+    if (!input) return;
+    const price = parseInt(input.value, 10) || 0;
+    try {
+      const { error } = await supabase.from('stock_images').update({ price }).eq('id', id);
+      if (error) throw error;
+      toast(price === 0 ? '✓ رایگان شد' : `✓ قیمت ${toFarsiNum(price)} تومان ذخیره شد`, 'success');
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  },
+
 };
 
