@@ -1,0 +1,1 @@
+ALTER TABLE stock_images ADD COLUMN IF NOT EXISTS page_url TEXT DEFAULT '';

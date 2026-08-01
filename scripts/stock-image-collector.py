@@ -196,6 +196,7 @@ def insert_image(supabase, image_data):
     payload = {
         'source': image_data['source'],
         'source_url': image_data['download_url'],
+        'page_url': image_data.get('page_url', ''),
         'title': image_data.get('title', 'Untitled'),
         'preview_url': image_data.get('preview_url'),
         'download_url': image_data['download_url'],

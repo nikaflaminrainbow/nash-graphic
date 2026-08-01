@@ -564,7 +564,6 @@ const Marketplace = {
     if (btn) { btn.closest('.stock-filters').querySelectorAll('.stock-filter-btn').forEach(function(b){b.classList.remove('active')}); btn.classList.add('active'); }
     var search = ((document.getElementById('stock-search') || {}).value || '').toLowerCase();
     var cat = (typeof category === 'string') ? category : 'all';
-    // Get active filter button if no category passed
     if (cat === 'all') {
       var activeBtn = document.querySelector('.stock-filter-btn.active');
       if (activeBtn) {
@@ -574,11 +573,11 @@ const Marketplace = {
       }
     }
     Marketplace._stockFiltered = Marketplace._stockImages.filter(function(img) {
-      var matchCat = (cat === 'all' || (img.category||'').toLowerCase() === cat);
-      var matchSearch = !search || 
-        (img.title||'').toLowerCase().indexOf(search) >= 0 || 
-        (img.category||'').toLowerCase().indexOf(search) >= 0 ||
-        (img.source||'').toLowerCase().indexOf(search) >= 0;
+      var imgCat = (img.category||'').toLowerCase();
+      var matchCat = (cat === 'all' || imgCat === cat);
+      var matchSearch = !search ||
+        (img.title||'').toLowerCase().indexOf(search) >= 0 ||
+        imgCat.indexOf(search) >= 0;
       return matchCat && matchSearch;
     });
     Marketplace.renderStockGrid();
@@ -592,7 +591,7 @@ const Marketplace = {
       var isFree = !img.price || img.price === 0;
       var priceText = isFree ? '🆓 رایگان' : (img.price||0).toLocaleString('fa-IR') + ' تومان';
       var actionBtn = isFree
-        ? '<a href="' + (img.download_url || '#') + '" download class="btn btn-success" style="display:inline-block;text-decoration:none;margin:0.5rem">⬇️ دانلود فایل اصلی</a>'
+        ? '<a href="' + (img.source_url || img.download_url || '#') + '" target="_blank" class="btn btn-success" style="display:inline-block;text-decoration:none;margin:0.5rem">⬇️ دانلود فایل اصلی رایگان</a>'
         : '<button class="btn btn-primary" onclick="Marketplace.buyStock(\'' + img.id + '\')" style="margin:0.5rem">🛒 افزودن به سبد خرید</button>';
       var src = img.preview_url || img.thumbnail_url || '';
       var srcLarge = src.replace('/medium/', '/large/').replace('/small/', '/large/');
@@ -609,7 +608,7 @@ const Marketplace = {
           '<table style="width:100%;font-size:0.85rem;margin-bottom:1rem;border-collapse:collapse">' +
             '<tr><td style="padding:0.4rem;color:var(--text-secondary)">نام فایل</td><td style="padding:0.4rem;text-align:left;direction:ltr">' + (img.title||'-') + '</td></tr>' +
             '<tr><td style="padding:0.4rem;color:var(--text-secondary)">دسته‌بندی</td><td style="padding:0.4rem">' + (img.category||'-') + '</td></tr>' +
-            '<tr><td style="padding:0.4rem;color:var(--text-secondary)">منبع</td><td style="padding:0.4rem">' + (img.source||'-') + '</td></tr>' +
+            
             '<tr><td style="padding:0.4rem;color:var(--text-secondary)">کیفیت</td><td style="padding:0.4rem">🖥️ Large (1920px+)</td></tr>' +
             '<tr><td style="padding:0.4rem;color:var(--text-secondary)">فرمت</td><td style="padding:0.4rem">📷 JPG / PNG</td></tr>' +
             '<tr><td style="padding:0.4rem;color:var(--text-secondary)">قیمت</td><td style="padding:0.4rem;color:#c8a96e;font-weight:700">' + priceText + '</td></tr>' +
