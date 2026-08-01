@@ -126,7 +126,9 @@ const Marketplace = {
     none?.classList.add('hidden');
 
     grid.innerHTML = Marketplace._filtered.map(d => `
-      <div class="design-card" onclick="Marketplace.openDesign('${d.id}')">
+      <div class="design-card">
+        ${State.user?.role === 'admin' ? `<button class="edit-btn" onclick="event.stopPropagation();Marketplace.editDesign('${d.id}')">✏️</button>` : ''}
+        <div onclick="Marketplace.openDesign('${d.id}')">
         ${d.thumbnail_url
           ? `<img class="design-thumb" src="${d.thumbnail_url}" alt="${d.title}" loading="lazy" />`
           : `<div class="design-thumb-placeholder">🎨</div>`
@@ -376,7 +378,64 @@ const Marketplace = {
       'design-price':     `${t('price')} (${t('toman')})`,
       'design-desc':      t('description'),
       'design-tags':      t('tags'),
+    
+
+  // ─── EDIT DESIGN (Admin) ──────────────────────────────
+  editDesign(designId) {
+    if (State.user?.role !== 'admin') return;
+    var el = document.getElementById('design-detail-content');
+    if (!el) return;
+    el.innerHTML = '<div class="dash-skeleton"></div>'.repeat(5);
+    
+    setTimeout(function() {
+      el.innerHTML =
+        '<div style="padding:1rem">' +
+          '<div style="display:flex;gap:2rem;flex-wrap:wrap">' +
+            '<div style="flex:1;min-width:250px">' +
+              '<img id="edit-thumb" src="" style="width:100%;border-radius:8px;border:1px dashed var(--border);aspect-ratio:1;object-fit:cover" />' +
+              '<input type="file" id="edit-thumb-upload" accept="image/*" class="input mt-1" style="font-size:0.8rem;padding:0.3rem" />' +
+            '</div>' +
+            '<div style="flex:2;min-width:250px;display:flex;flex-direction:column;gap:0.5rem">' +
+              '<input id="edit-title" type="text" class="input" placeholder="عنوان طرح" />' +
+              '<input id="edit-price" type="number" class="input" placeholder="قیمت (تومان)" />' +
+              '<select id="edit-category" class="input select"><option value="">دسته‌بندی</option></select>' +
+              '<textarea id="edit-desc" class="input" rows="4" placeholder="توضیحات"></textarea>' +
+              '<input id="edit-url" type="url" class="input" placeholder="لینک دانلود فایل اصلی (ZIP/PSD)" />' +
+              '<div style="display:flex;gap:0.5rem;margin-top:auto">' +
+                '<button class="btn btn-primary" onclick="Marketplace.saveDesign(\'' + designId + '\')">💾 ذخیره</button>' +
+                '<button class="btn btn-outline" onclick="Modal.close(\'design\')">✕ انصراف</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      
+      // Load current values
+      supabase.from('designs').select('*').eq('id', designId).single().then(function(r) {
+        var d = r.data;
+        if (!d) return;
+        (document.getElementById('edit-title') || {}).value = d.title || '';
+        (document.getElementById('edit-price') || {}).value = d.price || 0;
+        (document.getElementById('edit-desc') || {}).value = d.description || '';
+        (document.getElementById('edit-url') || {}).value = d.download_url || '';
+        var thumb = document.getElementById('edit-thumb');
+        if (thumb) thumb.src = d.thumbnail_url || '';
+      });
+    }, 100);
+  },
+
+  saveDesign: function(id) {
+    var updates = {
+      title: (document.getElementById('edit-title') || {}).value || '',
+      price: parseFloat((document.getElementById('edit-price') || {}).value) || 0,
+      description: (document.getElementById('edit-desc') || {}).value || '',
+      download_url: (document.getElementById('edit-url') || {}).value || '',
     };
+    supabase.from('designs').update(updates).eq('id', id).then(function() {
+      toast('طرح ذخیره شد ✅', 'success');
+      Marketplace.openDesign(id); // refresh
+      Modal.close('design');
+    });
+  }};
     Object.entries(map).forEach(([id, ph]) => {
       const el = document.getElementById(id);
       if (el) el.placeholder = ph;

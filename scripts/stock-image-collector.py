@@ -28,7 +28,7 @@ def _load_supabase_config():
 _cfg = _load_supabase_config()
 SUPABASE_URL = os.environ.get('SUPABASE_URL', '') or _cfg[0]
 SUPABASE_KEY = os.environ.get('SUPABASE_KEY', '') or _cfg[1]
-DEFAULT_PRICE = 100000  # 100,000 تومان
+DEFAULT_PRICE = 0  # رایگان پیش‌فرض  # 100,000 تومان
 WATERMARK_TEXT = "Nash Graphic"
 MAX_IMAGES_PER_SOURCE = 15  # Limit to avoid spam
 USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"

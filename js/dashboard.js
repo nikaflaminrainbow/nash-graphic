@@ -614,7 +614,7 @@ const Dashboard = {
           '' +
         '</div>' +
         '<div class="stock-actions">' +
-          '<button class="btn btn-primary btn-sm" style="flex:1" onclick="StockImages.buy(\'' + img.id + '\')">🛒 خرید</button>' +
+          (img.price === 0 || !img.price) ? '<a href="' + (img.download_url || '#') + '" download class="btn btn-success btn-sm" style="flex:1;text-decoration:none;text-align:center">⬇️ دانلود رایگان</a>' : '<button class="btn btn-primary btn-sm" style="flex:1" onclick="StockImages.buy(\'' + img.id + '\')">🛒 خرید</button>' +
         '</div>' +
       '</div>';
     }).join('');

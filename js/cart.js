@@ -197,9 +197,9 @@ const Cart = {
 
   // ─── SUBMIT ORDER ─────────────────────────────────────────
   async submitOrder() {
-    const name    = document.getElementById('checkout-name').value.trim();
-    const phone   = document.getElementById('checkout-phone').value.trim();
-    const address = document.getElementById('checkout-address').value.trim();
+    const nameEl  = document.getElementById('checkout-name');  const name    = nameEl ? nameEl.value.trim() : '';
+    const phoneEl = document.getElementById('checkout-phone'); const phone   = phoneEl ? phoneEl.value.trim() : '';
+    const addrEl = document.getElementById('checkout-address'); const address = addrEl ? addrEl.value.trim() : '';
 
     if (!name || !phone) { toast(t('fillRequired'), 'warning'); return; }
     if (phone.replace(/\D/g,'').length < 8) { toast(t('phoneRequired'), 'warning'); return; }
