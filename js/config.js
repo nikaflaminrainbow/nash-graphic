@@ -13,10 +13,10 @@ var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 // ─── PAYMENT CONFIG (Card to Card) ─────────────────────────
 // Stored in localStorage — admin can change from Admin Panel → تنظیمات پرداخت
 const PAYMENT_DEFAULTS = {
-  card_number:  'شماره کارت را اینجا وارد کنید',
-  card_holder:  'نام صاحب حساب',
-  bank_name:    'نام بانک',
-  phone:        'شماره تماس',
+  card_number:  '۶۰۳۷-۹۹۸۱-۹۳۰۰-۳۴۵۵',
+  card_holder:  'فایزه محمدی',
+  bank_name:    'بانک مسکن',
+  phone:        '۰۹۳۵۱۷۶۰۰۵۴',
 };
 var PAYMENT_CONFIG = JSON.parse(localStorage.getItem('payment_config') || 'null') || PAYMENT_DEFAULTS;
 
