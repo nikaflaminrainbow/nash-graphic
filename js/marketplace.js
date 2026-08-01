@@ -11,16 +11,15 @@ const Marketplace = {
 
   // ─── LOAD MARKETPLACE ──────────────────────────────────────
   async load() {
-    showLoading(true);
+    try { showLoading(true); } catch(e) {}
     try {
-      await Promise.all([
+      await Promise.allSettled([
         Marketplace.loadCategories(),
         Marketplace.loadDesigns(),
         Marketplace.loadStockImages()
       ]);
-    } finally {
-      showLoading(false);
-    }
+    } catch(e) { console.error('Marketplace load error:', e); }
+    try { showLoading(false); } catch(e) {}
   },
 
   // ─── LOAD CATEGORIES ───────────────────────────────────────
@@ -522,19 +521,17 @@ const Marketplace = {
 
   // ─── STOCK IMAGES ──────────────────────────────────────
   async loadStockImages() {
-    // Wait for DOM to be ready
-    await new Promise(function(r) { setTimeout(r, 300); });
+    await new Promise(function(r) { setTimeout(r, 200); });
     var grid = document.getElementById('marketplace-stock-grid');
-    if (!grid) { console.warn('stock grid not found'); return; }
+    if (!grid) return;
     try {
       var result = await supabase.from('stock_images').select('*').eq('is_approved', true).order('created_at', { ascending: false }).limit(100);
-      if (result.error) throw result.error;
+      if (result.error) { console.error('Stock error:', result.error); return; }
       Marketplace._stockImages = result.data || [];
       Marketplace._stockFiltered = Marketplace._stockImages.slice();
       Marketplace.renderStockGrid();
     } catch (err) {
       console.error('Stock load error:', err);
-      grid.innerHTML = '<p class="empty-state">خطا در بارگذاری: ' + (err.message || '') + '</p>';
     }
   },
 
