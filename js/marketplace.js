@@ -372,10 +372,15 @@ const Marketplace = {
   translateUploadForm() {
     const map = {
       'design-title':     t('designTitle'),
-      'design-price':     `${t('price')} (${t('toman')})`,
+      'design-price':     t('price') + ' (' + t('toman') + ')',
       'design-desc':      t('description'),
       'design-tags':      t('tags'),
-    
+    };
+    Object.entries(map).forEach(function(pair) {
+      var el = document.getElementById(pair[0]);
+      if (el) el.placeholder = pair[1];
+    });
+  },
 
   // ─── EDIT DESIGN (Admin) ──────────────────────────────
   editDesign(designId) {
@@ -431,11 +436,6 @@ const Marketplace = {
       toast('طرح ذخیره شد ✅', 'success');
       Marketplace.openDesign(id); // refresh
       Modal.close('design');
-    });
-  }};
-    Object.entries(map).forEach(([id, ph]) => {
-      const el = document.getElementById(id);
-      if (el) el.placeholder = ph;
     });
   },
 
