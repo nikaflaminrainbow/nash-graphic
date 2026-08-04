@@ -1321,6 +1321,11 @@ const Admin = {
       const { error } = await supabase.from('stock_images').update({ price }).eq('id', id);
       if (error) throw error;
       toast(price === 0 ? '✓ رایگان شد' : `✓ قیمت ${toFarsiNum(price)} تومان ذخیره شد`, 'success');
+      // Update marketplace cache
+      if (typeof Marketplace !== 'undefined' && Marketplace._stockImages) {
+        var img = Marketplace._stockImages.find(function(i) { return i.id === id; });
+        if (img) img.price = price;
+      }
     } catch (err) {
       toast(err.message, 'error');
     }

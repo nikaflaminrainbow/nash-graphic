@@ -639,11 +639,15 @@ const Marketplace = {
   },
 
   buyStock: function(id) {
-    Marketplace._stockImages.forEach(function(img) {
-      if (img.id === id) {
-        Cart.addItem({ id: img.id, name: img.title, price: img.price || 0, type: 'stock', thumbnail_url: img.thumbnail_url });
-        toast('افزودن به سبد خرید ✅', 'success');
-      }
+    // Fetch fresh price from database
+    supabase.from('stock_images').select('id,title,price,thumbnail_url').eq('id', id).single().then(function(r) {
+      var img = r.data;
+      if (!img) return;
+      Cart.addItem({ id: img.id, name: img.title, price: img.price || 0, type: 'stock', thumbnail_url: img.thumbnail_url });
+      toast('افزودن به سبد خرید ✅', 'success');
+      // Update cache
+      var cached = Marketplace._stockImages.find(function(i) { return i.id === id; });
+      if (cached) cached.price = img.price;
     });
     var m = document.getElementById('modal-design'); if (m) m.classList.add('hidden');
   }
