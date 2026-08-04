@@ -13,11 +13,13 @@ const Marketplace = {
   async load() {
     try { showLoading(true); } catch(e) {}
     try {
-      Marketplace.loadCategories();
-      Marketplace.loadDesigns();
-      Marketplace.loadStockImages();
+      await Promise.all([
+        Marketplace.loadCategories().catch(function(e){console.error('cat err:',e)}),
+        Marketplace.loadDesigns().catch(function(e){console.error('design err:',e)}),
+        Marketplace.loadStockImages().catch(function(e){console.error('stock err:',e)})
+      ]);
     } catch(e) { console.error('Marketplace load error:', e); }
-    setTimeout(function() { try { showLoading(false); } catch(e) {} }, 500);
+    try { showLoading(false); } catch(e) {}
   },
 
   // ─── LOAD CATEGORIES ───────────────────────────────────────
