@@ -262,6 +262,9 @@ const Dashboard = {
     // دسته‌بندی‌ها برای همه لود میشه
     await Dashboard.loadMainCategories();
 
+    // رندر پکیج‌ها (داینامیک)
+    if (typeof Cart !== 'undefined' && Cart.renderPackages) Cart.renderPackages();
+
     // سفارش‌ها و تاریخچه فقط برای کاربران لاگین‌شده
     if (State.user) {
       await Promise.all([

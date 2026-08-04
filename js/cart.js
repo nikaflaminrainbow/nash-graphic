@@ -46,21 +46,114 @@ const Cart = {
   },
 
   // ─── ADD PACKAGE ───────────────────────────────────────────
+  getPackages() {
+    var defaults = [
+      { id: 'bronze',  name: 'پکیج برنزی',   price: 30000000, desc: 'مناسب برای چاپخانه‌های کوچک', color: '#cd7f32' },
+      { id: 'silver',  name: 'پکیج نقره‌ای',  price: 50000000, desc: 'مناسب برای چاپخانه‌های متوسط', color: '#c0c0c0' },
+      { id: 'gold',    name: 'پکیج طلایی',    price: 70000000, desc: 'مناسب برای چاپخانه‌های بزرگ', color: '#ffd700' },
+      { id: 'special', name: 'پکیج ویژه',     price: 8000000,  desc: 'سفارش آزمایشی ویژه', color: '#9c27b0' }
+    ];
+    try {
+      var stored = JSON.parse(localStorage.getItem('packages') || 'null');
+      return (stored && stored.length) ? stored : defaults;
+    } catch(e) { return defaults; }
+  },
+
+  savePackages: function(pkgs) {
+    localStorage.setItem('packages', JSON.stringify(pkgs));
+  },
+
+  renderPackages: function() {
+    var grid = document.getElementById('packages-grid');
+    if (!grid) return;
+    var pkgs = Cart.getPackages();
+    var isAdmin = (typeof State !== 'undefined' && State.user && State.user.role === 'admin');
+    grid.innerHTML = pkgs.map(function(pkg) {
+      var priceFa = (pkg.price || 0).toLocaleString('fa-IR');
+      var editBtn = isAdmin
+        ? '<button class="btn btn-outline btn-sm mt-1" onclick="Cart.editPackage(\'' + pkg.id + '\')">✏️ ادیت</button> '
+        : '';
+      return '<div class="package-card glass" style="border-top:3px solid ' + (pkg.color || '#c8a96e') + '">' +
+        '<div class="pkg-title">' + pkg.name + '</div>' +
+        '<div class="pkg-price">' + priceFa + ' تومان</div>' +
+        '<div class="pkg-desc">' + (pkg.desc || '') + '</div>' +
+        '<button class="btn btn-primary btn-sm pkg-buy-btn mt-1" onclick="Cart.addPackage(\'' + pkg.id + '\')">افزودن به سبد</button> ' +
+        editBtn +
+      '</div>';
+    }).join('');
+    if (isAdmin) {
+      grid.innerHTML += '<div class="package-card glass" style="border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;min-height:200px;cursor:pointer" onclick="Cart.editPackage()">' +
+        '<div style="text-align:center;color:var(--text-secondary)"><div style="font-size:2rem">+</div><div>افزودن پکیج جدید</div></div>' +
+      '</div>';
+    }
+  },
+
+  editPackage: function(id) {
+    var pkgs = Cart.getPackages();
+    var pkg = id ? pkgs.find(function(p) { return p.id === id; }) : { id: '', name: '', price: 0, desc: '', color: '#c8a96e' };
+    var isNew = !id;
+    var title = isNew ? 'افزودن پکیج جدید' : 'ادیت پکیج: ' + pkg.name;
+    
+    var html = '<div style="padding:1rem">' +
+      '<h3>' + title + '</h3>' +
+      '<div style="margin-top:1rem">' +
+        '<label style="font-size:0.85rem;color:var(--text-secondary);display:block;margin-bottom:0.3rem">شناسه (انگلیسی)</label>' +
+        '<input id="pkg-id" class="input" value="' + (pkg.id || '') + '" placeholder="bronze, silver, ..." ' + (isNew ? '' : 'disabled') + ' />' +
+        '<label style="font-size:0.85rem;color:var(--text-secondary);display:block;margin:0.75rem 0 0.3rem">نام پکیج</label>' +
+        '<input id="pkg-name" class="input" value="' + (pkg.name || '') + '" placeholder="پکیج برنزی" />' +
+        '<label style="font-size:0.85rem;color:var(--text-secondary);display:block;margin:0.75rem 0 0.3rem">قیمت (تومان)</label>' +
+        '<input id="pkg-price" class="input" type="number" value="' + (pkg.price || 0) + '" style="direction:ltr" />' +
+        '<label style="font-size:0.85rem;color:var(--text-secondary);display:block;margin:0.75rem 0 0.3rem">توضیحات</label>' +
+        '<input id="pkg-desc" class="input" value="' + (pkg.desc || '') + '" placeholder="مناسب برای..." />' +
+        '<label style="font-size:0.85rem;color:var(--text-secondary);display:block;margin:0.75rem 0 0.3rem">رنگ حاشیه</label>' +
+        '<input id="pkg-color" type="color" value="' + (pkg.color || '#c8a96e') + '" style="width:60px;height:35px;border:none;cursor:pointer" />' +
+      '</div>' +
+      '<div style="display:flex;gap:0.5rem;margin-top:1.5rem">' +
+        '<button class="btn btn-primary" onclick="Cart.savePackageEdit()">💾 ذخیره</button>' +
+        (isNew ? '' : '<button class="btn btn-danger" onclick="Cart.deletePackage(\'' + pkg.id + '\')">🗑️ حذف</button>') +
+        '<button class="btn btn-outline" onclick="Modal.close(\'pkg-edit\')">انصراف</button>' +
+      '</div>' +
+    '</div>';
+    
+    document.getElementById('design-detail-content').innerHTML = html;
+    document.getElementById('modal-design').classList.remove('hidden');
+  },
+
+  savePackageEdit: function() {
+    var id = document.getElementById('pkg-id').value.trim();
+    var name = document.getElementById('pkg-name').value.trim();
+    var price = parseInt(document.getElementById('pkg-price').value) || 0;
+    var desc = document.getElementById('pkg-desc').value.trim();
+    var color = document.getElementById('pkg-color').value;
+    if (!id || !name) { toast('شناسه و نام الزامیه', 'error'); return; }
+    var pkgs = Cart.getPackages();
+    var idx = pkgs.findIndex(function(p) { return p.id === id; });
+    var pkg = { id: id, name: name, price: price, desc: desc, color: color };
+    if (idx >= 0) { pkgs[idx] = pkg; } else { pkgs.push(pkg); }
+    Cart.savePackages(pkgs);
+    Cart.renderPackages();
+    Modal.close('design-detail');
+    toast('پکیج ذخیره شد ✅', 'success');
+  },
+
+  deletePackage: function(id) {
+    if (!confirm('از حذف پکیج مطمئنی؟')) return;
+    var pkgs = Cart.getPackages().filter(function(p) { return p.id !== id; });
+    Cart.savePackages(pkgs);
+    Cart.renderPackages();
+    Modal.close('design-detail');
+    toast('پکیج حذف شد', 'success');
+  },
+
   addPackage(type) {
     if (State.isGuest) {
       toast(State.lang === 'fa' ? 'برای خرید پکیج، ابتدا ثبت‌نام کنید یا وارد شوید' : 'Please login or register to purchase packages', 'warning');
       Modal.open('auth');
       return;
     }
-    const packages = {
-      bronze:  { name: t('bronzePkg'), price: 30_000_000 },
-      silver:  { name: t('silverPkg'), price: 50_000_000 },
-      gold:    { name: t('goldPkg'),   price: 70_000_000 },
-      special: { name: t('specialPkg'),price:  8_000_000 }
-    };
-    const pkg = packages[type];
+    var pkg = Cart.getPackages().find(function(p) { return p.id === type; });
     if (!pkg) return;
-    Cart.addItem({ id: `pkg-${type}`, type: 'package', name: pkg.name, price: pkg.price, qty: 1, meta: {} });
+    Cart.addItem({ id: 'pkg-' + pkg.id, type: 'package', name: pkg.name, price: pkg.price, qty: 1, meta: {} });
   },
 
   // ─── ADD ORDER ITEM (printer dashboard) ────────────────────
