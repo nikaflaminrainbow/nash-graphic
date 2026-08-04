@@ -30,7 +30,7 @@ const Admin = {
   showTab(tab) {
     Admin._currentTab = tab;
     document.querySelectorAll('.admin-tabs .tab-btn').forEach(b => b.classList.remove('active'));
-    const idx = ['stats','media','users','designs','orders','categories','design-categories','menu','theme','content','blog','faq','tickets','stock','agent','payment'].indexOf(tab);
+    const idx = ['stats','users','orders','design-categories','blog','faq','tickets','stock','payment'].indexOf(tab);
     const btns = document.querySelectorAll('.admin-tabs .tab-btn');
     if (btns[idx]) btns[idx].classList.add('active');
 
