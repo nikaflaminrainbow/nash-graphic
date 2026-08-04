@@ -1072,7 +1072,8 @@ const Admin = {
     var sub = (cat.subcategories || []).find(function(s) { return s.id === subId; });
     if (!sub) return;
     sub.name = document.getElementById('dsc-name-' + catId + '-' + subId).value.trim() || sub.name;
-    sub.basePrice = parseInt(document.getElementById('dsc-price-' + catId + '-' + subId).value) || 0;
+    var priceVal = (document.getElementById('dsc-price-' + catId + '-' + subId).value || '').replace(/[۰-۹]/g, function(d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); });
+    sub.basePrice = parseInt(priceVal) || 0;
     sub.sampleImage = document.getElementById('dsc-img-' + catId + '-' + subId).value.trim();
     Admin._saveDesignCats(cats);
     toast('زیرمجموعه ذخیره شد ✓', 'success');
