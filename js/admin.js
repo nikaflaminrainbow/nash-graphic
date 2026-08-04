@@ -30,7 +30,7 @@ const Admin = {
   showTab(tab) {
     Admin._currentTab = tab;
     document.querySelectorAll('.admin-tabs .tab-btn').forEach(b => b.classList.remove('active'));
-    const idx = ['stats','media','users','designs','orders','categories','menu','theme','content','blog','faq','tickets','stock','agent','payment'].indexOf(tab);
+    const idx = ['stats','media','users','designs','orders','categories','design-categories','menu','theme','content','blog','faq','tickets','stock','agent','payment'].indexOf(tab);
     const btns = document.querySelectorAll('.admin-tabs .tab-btn');
     if (btns[idx]) btns[idx].classList.add('active');
 
@@ -45,6 +45,7 @@ const Admin = {
       case 'designs':    Admin.renderDesigns();    break;
       case 'orders':     Admin.renderOrders();     break;
       case 'categories': Admin.renderCategories(); break;
+      case 'design-categories': Admin.renderDesignCategories(); break;
       case 'menu':       Admin.renderMenu();       break;
       case 'theme':      Admin.renderTheme();      break;
       case 'content':    Admin.renderContent();    break;
@@ -807,6 +808,349 @@ const Admin = {
       toast(t('deleteSuccess'), 'success');
       Admin.openCategorySamples(Admin._sampleCategoryId);
     } catch (err) { toast(err.message, 'error'); }
+  },
+
+  // ═══════════════════════════════════════
+  //  DESIGN CATEGORIES (localStorage-based)
+  // ═══════════════════════════════════════
+  _getDesignCats() {
+    try { return JSON.parse(localStorage.getItem('design_categories') || '[]'); }
+    catch { return []; }
+  },
+  _saveDesignCats(cats) {
+    localStorage.setItem('design_categories', JSON.stringify(cats));
+  },
+  _seedDesignCats() {
+    var existing = Admin._getDesignCats();
+    if (existing.length > 0) return;
+    var defaults = [
+      {
+        id: 'flexo', name: 'چاپ فلکسو', sampleImage: '',
+        subcategories: [{
+          id: 'packaging', name: 'بسته‌بندی', basePrice: 500000, colorCounts: [1,2,3,4],
+          execMethods: [
+            { id: 'from-photo', name: 'از روی عکس', sampleImage: '' },
+            { id: 'from-sketch', name: 'از روی اتود', sampleImage: '' }
+          ]
+        }]
+      },
+      {
+        id: 'offset', name: 'چاپ افست', sampleImage: '',
+        subcategories: [{
+          id: 'catalog', name: 'کاتالوگ', basePrice: 600000, colorCounts: [1,2,3,4],
+          execMethods: [
+            { id: 'from-photo', name: 'از روی عکس', sampleImage: '' },
+            { id: 'from-sketch', name: 'از روی اتود', sampleImage: '' }
+          ]
+        }]
+      },
+      {
+        id: 'digital', name: 'چاپ دیجیتال', sampleImage: '',
+        subcategories: [{
+          id: 'business-card', name: 'کارت ویزیت', basePrice: 300000, colorCounts: [1,2,3,4],
+          execMethods: [
+            { id: 'from-photo', name: 'از روی عکس', sampleImage: '' },
+            { id: 'from-sketch', name: 'از روی اتود', sampleImage: '' }
+          ]
+        }]
+      },
+      {
+        id: 'graphic-design', name: 'طراحی گرافیک', sampleImage: '',
+        subcategories: [{
+          id: 'logo', name: 'لوگو', basePrice: 800000, colorCounts: [1,2,3,4],
+          execMethods: [
+            { id: 'from-photo', name: 'از روی عکس', sampleImage: '' },
+            { id: 'from-sketch', name: 'از روی اتود', sampleImage: '' }
+          ]
+        }]
+      }
+    ];
+    Admin._saveDesignCats(defaults);
+  },
+
+  renderDesignCategories() {
+    Admin._seedDesignCats();
+    var el = document.getElementById('admin-content');
+    var cats = Admin._getDesignCats();
+
+    var html = '<div style="margin-bottom:1.5rem">' +
+      '<h3 style="margin-bottom:0.5rem">🎨 مدیریت دسته‌بندی طراحی</h3>' +
+      '<p style="font-size:0.82rem;color:var(--text-secondary)">دسته‌بندی‌ها و زیرمجموعه‌ها را مدیریت کنید. تغییرات بلافاصله برای مشتریان اعمال می‌شود.</p>' +
+      '</div>';
+
+    html += '<div style="display:flex;gap:0.75rem;margin-bottom:1.5rem;flex-wrap:wrap">' +
+      '<button class="btn btn-primary btn-sm" onclick="Admin.addDesignCat()">+ دسته‌بندی جدید</button>' +
+      '<button class="btn btn-outline btn-sm" onclick="Admin._seedDesignCats();Admin.renderDesignCategories()">🔄 بازنشانی پیش‌فرض</button>' +
+      '</div>';
+
+    html += '<div id="dc-add-form" class="hidden" style="background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.25rem">' +
+      '<h4 id="dc-form-title" style="margin-bottom:1rem;font-size:0.95rem">افزودن دسته‌بندی</h4>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">' +
+        '<div><label class="label">نام دسته‌بندی</label><input id="dc-name" type="text" class="input" placeholder="مثال: چاپ فلکسو" /></div>' +
+        '<div><label class="label">آدرس تصویر نمونه (اختیاری)</label><input id="dc-sample-img" type="text" class="input" placeholder="https://..." style="direction:ltr;text-align:left" /></div>' +
+      '</div>' +
+      '<input type="hidden" id="dc-edit-id" value="" />' +
+      '<div style="display:flex;gap:0.75rem">' +
+        '<button class="btn btn-success btn-sm" onclick="Admin.saveDesignCat()">💾 ذخیره</button>' +
+        '<button class="btn btn-ghost btn-sm" onclick="Admin.closeDesignCatForm()">انصراف</button>' +
+      '</div>' +
+    '</div>';
+
+    cats.forEach(function(cat) {
+      var catId = cat.id;
+      html += '<div class="dash-card glass" style="margin-bottom:1rem;padding:1.25rem">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem">';
+      html += '<div style="display:flex;align-items:center;gap:0.75rem">';
+      if (cat.sampleImage) {
+        html += '<img src="' + cat.sampleImage + '" style="width:48px;height:48px;object-fit:cover;border-radius:8px" onerror="this.style.display=\'none\'" />';
+      }
+      html += '<div><h4 style="margin:0;font-size:1.05rem">' + cat.name + '</h4>';
+      html += '<span style="font-size:0.78rem;color:var(--text-secondary)">' + (cat.subcategories||[]).length + ' زیرمجموعه</span></div>';
+      html += '</div>';
+      html += '<div style="display:flex;gap:0.4rem;flex-wrap:wrap">';
+      html += '<button class="btn btn-sm btn-outline" onclick="Admin.editDesignCat(\'' + catId + '\')">✏️ ویرایش</button>';
+      html += '<button class="btn btn-sm btn-success" onclick="Admin.addDesignSubcat(\'' + catId + '\')">+ زیرمجموعه</button>';
+      html += '<button class="btn btn-sm btn-danger" onclick="Admin.deleteDesignCat(\'' + catId + '\')">🗑️</button>';
+      html += '</div></div>';
+
+      // Subcategories
+      (cat.subcategories || []).forEach(function(sub) {
+        var subId = sub.id;
+        html += '<div style="background:var(--bg-secondary,rgba(255,255,255,0.03));border-radius:var(--radius);padding:1rem;margin-bottom:0.75rem;border-right:3px solid var(--accent,#E06C2A)">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;flex-wrap:wrap;gap:0.5rem">';
+        html += '<div>';
+        html += '<strong style="font-size:0.95rem">' + sub.name + '</strong>';
+        html += ' <span style="font-size:0.78rem;color:var(--accent)">قیمت پایه: ' + formatPrice(sub.basePrice || 0) + '</span>';
+        html += '</div>';
+        html += '<div style="display:flex;gap:0.4rem;flex-wrap:wrap">';
+        html += '<button class="btn btn-sm btn-outline" onclick="Admin.editDesignSubcat(\'' + catId + '\',\'' + subId + '\')">✏️</button>';
+        html += '<button class="btn btn-sm btn-danger" onclick="Admin.deleteDesignSubcat(\'' + catId + '\',\'' + subId + '\')">🗑️</button>';
+        html += '</div></div>';
+
+        // Sub-sub form for editing subcat (hidden by default)
+        html += '<div id="dsc-form-' + catId + '-' + subId + '" class="hidden" style="background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius);padding:1rem;margin-bottom:0.75rem">';
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">';
+        html += '<div><label class="label">نام زیرمجموعه</label><input id="dsc-name-' + catId + '-' + subId + '" type="text" class="input" value="' + (sub.name||'') + '" /></div>';
+        html += '<div><label class="label">قیمت پایه (تومان)</label><input id="dsc-price-' + catId + '-' + subId + '" type="number" class="input" value="' + (sub.basePrice||0) + '" /></div>';
+        html += '<div style="grid-column:1/-1"><label class="label">تصویر نمونه (URL)</label><input id="dsc-img-' + catId + '-' + subId + '" type="text" class="input" value="' + (sub.sampleImage||'') + '" style="direction:ltr;text-align:left" /></div>';
+        html += '</div>';
+        html += '<div style="display:flex;gap:0.5rem;margin-top:0.75rem">';
+        html += '<button class="btn btn-success btn-sm" onclick="Admin.saveDesignSubcat(\'' + catId + '\',\'' + subId + '\')">💾 ذخیره</button>';
+        html += '<button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'dsc-form-' + catId + '-' + subId + '\').classList.add(\'hidden\')">انصراف</button>';
+        html += '</div></div>';
+
+        // Exec methods
+        html += '<div style="margin-bottom:0.5rem"><span style="font-size:0.8rem;color:var(--text-secondary);margin-left:0.5rem">نحوه اجرا:</span>';
+        html += '<button class="btn btn-sm btn-ghost" style="font-size:0.75rem" onclick="Admin.addDesignExecMethod(\'' + catId + '\',\'' + subId + '\')">+ افزودن</button></div>';
+        html += '<div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.5rem">';
+        (sub.execMethods || []).forEach(function(em) {
+          html += '<span style="display:inline-flex;align-items:center;gap:0.4rem;background:var(--glass-bg,rgba(255,255,255,0.05));border:1px solid var(--glass-border,rgba(255,255,255,0.1));border-radius:20px;padding:0.3rem 0.7rem;font-size:0.8rem">';
+          html += (em.sampleImage ? '<img src="' + em.sampleImage + '" style="width:16px;height:16px;border-radius:4px;object-fit:cover" onerror="this.style.display=\'none\'" />' : '📋');
+          html += '<span>' + em.name + '</span>';
+          html += '<button style="background:none;border:none;color:var(--danger,#ff4444);cursor:pointer;font-size:0.75rem;padding:0 2px" onclick="Admin.removeDesignExecMethod(\'' + catId + '\',\'' + subId + '\',\'' + em.id + '\')">✕</button>';
+          html += '</span>';
+        });
+        html += '</div>';
+
+        // Exec method add form (hidden)
+        html += '<div id="dem-form-' + catId + '-' + subId + '" class="hidden" style="display:flex;gap:0.5rem;margin-bottom:0.5rem;flex-wrap:wrap">';
+        html += '<input id="dem-name-' + catId + '-' + subId + '" type="text" class="input" placeholder="نام نحوه اجرا" style="flex:1;min-width:140px" />';
+        html += '<input id="dem-img-' + catId + '-' + subId + '" type="text" class="input" placeholder="تصویر نمونه (URL)" style="flex:1;min-width:140px;direction:ltr" />';
+        html += '<button class="btn btn-sm btn-success" onclick="Admin.saveDesignExecMethod(\'' + catId + '\',\'' + subId + '\')">✓</button>';
+        html += '<button class="btn btn-sm btn-ghost" onclick="document.getElementById(\'dem-form-' + catId + '-' + subId + '\').classList.add(\'hidden\')">✕</button>';
+        html += '</div>';
+
+        // Color counts
+        html += '<div style="margin-bottom:0.25rem"><span style="font-size:0.8rem;color:var(--text-secondary);margin-left:0.5rem">تعداد رنگ‌ها:</span>';
+        html += '<button class="btn btn-sm btn-ghost" style="font-size:0.75rem" onclick="Admin.addDesignColorCount(\'' + catId + '\',\'' + subId + '\')">+ افزودن</button></div>';
+        html += '<div style="display:flex;flex-wrap:wrap;gap:0.4rem">';
+        (sub.colorCounts || []).forEach(function(cc) {
+          html += '<span style="display:inline-flex;align-items:center;gap:0.3rem;background:var(--glass-bg,rgba(255,255,255,0.05));border:1px solid var(--glass-border,rgba(255,255,255,0.1));border-radius:20px;padding:0.3rem 0.6rem;font-size:0.8rem">';
+          html += '<span>' + (cc === 4 ? '۴ رنگ (فول کالر)' : cc + ' رنگ') + '</span>';
+          html += '<button style="background:none;border:none;color:var(--danger,#ff4444);cursor:pointer;font-size:0.75rem;padding:0 2px" onclick="Admin.removeDesignColorCount(\'' + catId + '\',\'' + subId + '\',' + cc + ')">✕</button>';
+          html += '</span>';
+        });
+        html += '</div>';
+
+        html += '</div>'; // end sub
+      });
+
+      html += '</div>'; // end card
+    });
+
+    el.innerHTML = html;
+  },
+
+  addDesignCat() {
+    document.getElementById('dc-add-form').classList.remove('hidden');
+    document.getElementById('dc-form-title').textContent = 'افزودن دسته‌بندی';
+    document.getElementById('dc-name').value = '';
+    document.getElementById('dc-sample-img').value = '';
+    document.getElementById('dc-edit-id').value = '';
+    document.getElementById('dc-add-form').scrollIntoView({ behavior:'smooth', block:'nearest' });
+  },
+
+  closeDesignCatForm() {
+    document.getElementById('dc-add-form').classList.add('hidden');
+    document.getElementById('dc-edit-id').value = '';
+  },
+
+  editDesignCat(catId) {
+    var cats = Admin._getDesignCats();
+    var cat = cats.find(function(c) { return c.id === catId; });
+    if (!cat) return;
+    document.getElementById('dc-add-form').classList.remove('hidden');
+    document.getElementById('dc-form-title').textContent = 'ویرایش دسته‌بندی';
+    document.getElementById('dc-name').value = cat.name || '';
+    document.getElementById('dc-sample-img').value = cat.sampleImage || '';
+    document.getElementById('dc-edit-id').value = catId;
+  },
+
+  saveDesignCat() {
+    var name = document.getElementById('dc-name').value.trim();
+    var sampleImg = document.getElementById('dc-sample-img').value.trim();
+    var editId = document.getElementById('dc-edit-id').value;
+    if (!name) { toast('لطفاً نام دسته‌بندی را وارد کنید', 'warning'); return; }
+
+    var cats = Admin._getDesignCats();
+    if (editId) {
+      var cat = cats.find(function(c) { return c.id === editId; });
+      if (cat) { cat.name = name; cat.sampleImage = sampleImg; }
+    } else {
+      var slug = name.replace(/\s+/g, '-').toLowerCase().replace(/[^a-z0-9\-]/g, '') || ('cat-' + Date.now());
+      cats.push({ id: slug, name: name, sampleImage: sampleImg, subcategories: [] });
+    }
+    Admin._saveDesignCats(cats);
+    toast(editId ? 'دسته‌بندی ویرایش شد ✓' : 'دسته‌بندی اضافه شد ✓', 'success');
+    Admin.closeDesignCatForm();
+    Admin.renderDesignCategories();
+  },
+
+  deleteDesignCat(catId) {
+    var cats = Admin._getDesignCats();
+    var cat = cats.find(function(c) { return c.id === catId; });
+    if (!confirm('حذف دسته‌بندی «' + (cat?.name || '') + '»؟')) return;
+    Admin._saveDesignCats(cats.filter(function(c) { return c.id !== catId; }));
+    toast('حذف شد ✓', 'success');
+    Admin.renderDesignCategories();
+  },
+
+  addDesignSubcat(catId) {
+    var cats = Admin._getDesignCats();
+    var cat = cats.find(function(c) { return c.id === catId; });
+    if (!cat) return;
+    var name = prompt('نام زیرمجموعه جدید:');
+    if (!name || !name.trim()) return;
+    var slug = name.trim().replace(/\s+/g, '-').toLowerCase().replace(/[^a-z0-9\-]/g, '') || ('sub-' + Date.now());
+    if (!cat.subcategories) cat.subcategories = [];
+    cat.subcategories.push({
+      id: slug, name: name.trim(), basePrice: 0, colorCounts: [1,2,3,4],
+      execMethods: [
+        { id: 'from-photo', name: 'از روی عکس', sampleImage: '' },
+        { id: 'from-sketch', name: 'از روی اتود', sampleImage: '' }
+      ]
+    });
+    Admin._saveDesignCats(cats);
+    toast('زیرمجموعه اضافه شد ✓', 'success');
+    Admin.renderDesignCategories();
+  },
+
+  editDesignSubcat(catId, subId) {
+    var formEl = document.getElementById('dsc-form-' + catId + '-' + subId);
+    if (formEl) {
+      var isHidden = formEl.classList.contains('hidden');
+      // Hide all other forms first
+      document.querySelectorAll('[id^="dsc-form-"]').forEach(function(f) { f.classList.add('hidden'); });
+      if (isHidden) formEl.classList.remove('hidden');
+    }
+  },
+
+  saveDesignSubcat(catId, subId) {
+    var cats = Admin._getDesignCats();
+    var cat = cats.find(function(c) { return c.id === catId; });
+    if (!cat) return;
+    var sub = (cat.subcategories || []).find(function(s) { return s.id === subId; });
+    if (!sub) return;
+    sub.name = document.getElementById('dsc-name-' + catId + '-' + subId).value.trim() || sub.name;
+    sub.basePrice = parseInt(document.getElementById('dsc-price-' + catId + '-' + subId).value) || 0;
+    sub.sampleImage = document.getElementById('dsc-img-' + catId + '-' + subId).value.trim();
+    Admin._saveDesignCats(cats);
+    toast('زیرمجموعه ذخیره شد ✓', 'success');
+    Admin.renderDesignCategories();
+  },
+
+  deleteDesignSubcat(catId, subId) {
+    if (!confirm('حذف این زیرمجموعه؟')) return;
+    var cats = Admin._getDesignCats();
+    var cat = cats.find(function(c) { return c.id === catId; });
+    if (!cat) return;
+    cat.subcategories = (cat.subcategories || []).filter(function(s) { return s.id !== subId; });
+    Admin._saveDesignCats(cats);
+    toast('حذف شد ✓', 'success');
+    Admin.renderDesignCategories();
+  },
+
+  addDesignExecMethod(catId, subId) {
+    var formEl = document.getElementById('dem-form-' + catId + '-' + subId);
+    if (formEl) formEl.classList.toggle('hidden');
+  },
+
+  saveDesignExecMethod(catId, subId) {
+    var cats = Admin._getDesignCats();
+    var cat = cats.find(function(c) { return c.id === catId; });
+    if (!cat) return;
+    var sub = (cat.subcategories || []).find(function(s) { return s.id === subId; });
+    if (!sub) return;
+    var name = document.getElementById('dem-name-' + catId + '-' + subId).value.trim();
+    var sampleImg = document.getElementById('dem-img-' + catId + '-' + subId).value.trim();
+    if (!name) { toast('نام نحوه اجرا را وارد کنید', 'warning'); return; }
+    if (!sub.execMethods) sub.execMethods = [];
+    var slug = name.replace(/\s+/g, '-').toLowerCase().replace(/[^a-z0-9\-]/g, '') || ('em-' + Date.now());
+    sub.execMethods.push({ id: slug, name: name, sampleImage: sampleImg });
+    Admin._saveDesignCats(cats);
+    toast('نحوه اجرا اضافه شد ✓', 'success');
+    Admin.renderDesignCategories();
+  },
+
+  removeDesignExecMethod(catId, subId, emId) {
+    var cats = Admin._getDesignCats();
+    var cat = cats.find(function(c) { return c.id === catId; });
+    if (!cat) return;
+    var sub = (cat.subcategories || []).find(function(s) { return s.id === subId; });
+    if (!sub) return;
+    sub.execMethods = (sub.execMethods || []).filter(function(e) { return e.id !== emId; });
+    Admin._saveDesignCats(cats);
+    toast('حذف شد ✓', 'success');
+    Admin.renderDesignCategories();
+  },
+
+  addDesignColorCount(catId, subId) {
+    var cats = Admin._getDesignCats();
+    var cat = cats.find(function(c) { return c.id === catId; });
+    if (!cat) return;
+    var sub = (cat.subcategories || []).find(function(s) { return s.id === subId; });
+    if (!sub) return;
+    var count = parseInt(prompt('تعداد رنگ جدید (مثلاً 5):'));
+    if (!count || count < 1 || count > 16) { toast('تعداد رنگ باید بین ۱ تا ۱۶ باشد', 'warning'); return; }
+    if (!sub.colorCounts) sub.colorCounts = [];
+    if (sub.colorCounts.indexOf(count) !== -1) { toast('این تعداد رنگ قبلاً اضافه شده', 'warning'); return; }
+    sub.colorCounts.push(count);
+    sub.colorCounts.sort(function(a, b) { return a - b; });
+    Admin._saveDesignCats(cats);
+    toast('تعداد رنگ اضافه شد ✓', 'success');
+    Admin.renderDesignCategories();
+  },
+
+  removeDesignColorCount(catId, subId, count) {
+    var cats = Admin._getDesignCats();
+    var cat = cats.find(function(c) { return c.id === catId; });
+    if (!cat) return;
+    var sub = (cat.subcategories || []).find(function(s) { return s.id === subId; });
+    if (!sub) return;
+    sub.colorCounts = (sub.colorCounts || []).filter(function(c) { return c !== count; });
+    Admin._saveDesignCats(cats);
+    toast('حذف شد ✓', 'success');
+    Admin.renderDesignCategories();
   },
 
   // ═══════════════════════════════════════

@@ -322,19 +322,59 @@ const Dashboard = {
     });
   },
 
-  // ─── Load top-level categories ────────────────────────────
-  async loadMainCategories() {
-    try {
-      const { data } = await supabase
-        .from('categories').select('*').is('parent_id', null).order('name');
-      const sel = document.getElementById('main-cat');
-      if (!sel) return;
-      sel.innerHTML = `<option value="">${t('selectOption')}</option>` +
-        (data || []).map(c => `<option value="${c.id}" data-price="${c.base_price||0}">${c.name}</option>`).join('');
-    } catch (err) { console.warn(err); }
+  // ─── Load top-level categories from localStorage ─────────
+  _getDesignCats() {
+    try { return JSON.parse(localStorage.getItem('design_categories') || '[]'); }
+    catch { return []; }
   },
 
-  async onMainCatChange() {
+  loadMainCategories() {
+    // Seed defaults if empty
+    var existing = Dashboard._getDesignCats();
+    if (existing.length === 0) {
+      // Trigger seed via Admin if available, otherwise seed inline
+      if (typeof Admin !== 'undefined' && Admin._seedDesignCats) {
+        Admin._seedDesignCats();
+      } else {
+        var defaults = [
+          { id:'flexo', name:'چاپ فلکسو', sampleImage:'', subcategories:[
+            { id:'packaging', name:'بسته‌بندی', basePrice:500000, colorCounts:[1,2,3,4], execMethods:[
+              { id:'from-photo', name:'از روی عکس', sampleImage:'' },
+              { id:'from-sketch', name:'از روی اتود', sampleImage:'' }
+            ]}
+          ]},
+          { id:'offset', name:'چاپ افست', sampleImage:'', subcategories:[
+            { id:'catalog', name:'کاتالوگ', basePrice:600000, colorCounts:[1,2,3,4], execMethods:[
+              { id:'from-photo', name:'از روی عکس', sampleImage:'' },
+              { id:'from-sketch', name:'از روی اتود', sampleImage:'' }
+            ]}
+          ]},
+          { id:'digital', name:'چاپ دیجیتال', sampleImage:'', subcategories:[
+            { id:'business-card', name:'کارت ویزیت', basePrice:300000, colorCounts:[1,2,3,4], execMethods:[
+              { id:'from-photo', name:'از روی عکس', sampleImage:'' },
+              { id:'from-sketch', name:'از روی اتود', sampleImage:'' }
+            ]}
+          ]},
+          { id:'graphic-design', name:'طراحی گرافیک', sampleImage:'', subcategories:[
+            { id:'logo', name:'لوگو', basePrice:800000, colorCounts:[1,2,3,4], execMethods:[
+              { id:'from-photo', name:'از روی عکس', sampleImage:'' },
+              { id:'from-sketch', name:'از روی اتود', sampleImage:'' }
+            ]}
+          ]}
+        ];
+        localStorage.setItem('design_categories', JSON.stringify(defaults));
+        existing = defaults;
+      }
+      existing = Dashboard._getDesignCats();
+    }
+
+    const sel = document.getElementById('main-cat');
+    if (!sel) return;
+    sel.innerHTML = `<option value="">${t('selectOption')}</option>` +
+      existing.map(c => `<option value="${c.id}" data-price="0">${c.name}</option>`).join('');
+  },
+
+  onMainCatChange() {
     const mainId = document.getElementById('main-cat').value;
     const typeSel = document.getElementById('product-type');
     if (!typeSel) return;
@@ -343,123 +383,120 @@ const Dashboard = {
     document.getElementById('color-count').innerHTML = `<option value="">${t('selectOption')}</option>`;
     Dashboard.updateBasePrice();
     Dashboard._currentMainCatId = mainId || null;
+    Dashboard._currentSubcat = null;
+    Dashboard._currentExecMethod = null;
     Dashboard.updateCategorySample();
     if (!mainId) return;
-    try {
-      const { data } = await supabase.from('categories').select('*').eq('parent_id', mainId).order('name');
-      typeSel.innerHTML = `<option value="">${t('selectOption')}</option>` +
-        (data||[]).map(c => `<option value="${c.id}" data-price="${c.base_price||0}">${c.name}</option>`).join('');
-    } catch (err) { console.warn(err); }
+
+    const cats = Dashboard._getDesignCats();
+    const cat = cats.find(c => c.id === mainId);
+    if (!cat || !cat.subcategories) return;
+    typeSel.innerHTML = `<option value="">${t('selectOption')}</option>` +
+      cat.subcategories.map(c => `<option value="${c.id}" data-price="${c.basePrice||0}">${c.name}</option>`).join('');
   },
 
-  async onProductTypeChange() {
+  onProductTypeChange() {
     const typeId  = document.getElementById('product-type').value;
     const execSel = document.getElementById('exec-method');
     if (!execSel) return;
     execSel.innerHTML = `<option value="">${t('selectOption')}</option>`;
     document.getElementById('color-count').innerHTML = `<option value="">${t('selectOption')}</option>`;
     Dashboard.updateBasePrice();
+    Dashboard._currentExecMethod = null;
     Dashboard.updateCategorySample();
-    if (!typeId) return;
-    try {
-      const { data } = await supabase.from('categories').select('*').eq('parent_id', typeId).order('name');
-      if (data && data.length) {
-        execSel.innerHTML = `<option value="">${t('selectOption')}</option>` +
-          data.map(c => `<option value="${c.id}" data-price="${c.base_price||0}">${c.name}</option>`).join('');
-      } else {
-        // اگه این نوع محصول زیردسته «نحوه اجرا» نداشت، مستقیم رنگ‌ها رو بارگذاری کن
-        execSel.innerHTML = `<option value="">${t('noExecMethodNeeded')}</option>`;
-        await Dashboard._loadColorsFor(typeId);
-      }
-    } catch (err) { console.warn(err); }
+
+    if (!typeId) { Dashboard._currentSubcat = null; return; }
+
+    const cats = Dashboard._getDesignCats();
+    const mainCat = cats.find(c => c.id === Dashboard._currentMainCatId);
+    const subcat = mainCat && mainCat.subcategories ? mainCat.subcategories.find(s => s.id === typeId) : null;
+    Dashboard._currentSubcat = subcat || null;
+
+    if (!subcat) return;
+
+    if (subcat.execMethods && subcat.execMethods.length) {
+      execSel.innerHTML = `<option value="">${t('selectOption')}</option>` +
+        subcat.execMethods.map(em => `<option value="${em.id}" data-sample="${em.sampleImage||''}">${em.name}</option>`).join('');
+    } else {
+      execSel.innerHTML = `<option value="">${t('noExecMethodNeeded')}</option>`;
+      Dashboard._loadColorsFromSubcat(subcat);
+    }
   },
 
-  async onExecMethodChange() {
+  onExecMethodChange() {
     const execId = document.getElementById('exec-method').value;
     Dashboard.updateBasePrice();
+
+    // Update sample image from exec method
+    const execSel = document.getElementById('exec-method');
+    if (execSel?.value) {
+      const opt = execSel.options[execSel.selectedIndex];
+      Dashboard._currentExecMethod = {
+        id: execSel.value,
+        name: opt.text,
+        sampleImage: opt.getAttribute('data-sample') || ''
+      };
+    } else {
+      Dashboard._currentExecMethod = null;
+    }
+
     Dashboard.updateCategorySample();
-    await Dashboard._loadColorsFor(execId || Dashboard._currentMainCatId);
+    Dashboard._loadColorsFromSubcat(Dashboard._currentSubcat);
   },
 
-  // بارگذاری مشترک گزینه‌های رنگ (۱ تا ۸ رنگ) از category_color_images
-  async _loadColorsFor(catId) {
+  _loadColorsFromSubcat(subcat) {
     const colorSel = document.getElementById('color-count');
     if (!colorSel) return;
-    Dashboard._currentColorCatId = catId;
     colorSel.innerHTML = `<option value="">${t('selectOption')}</option>`;
-    if (!catId) return;
-    try {
-      const { data } = await supabase
-        .from('category_color_images')
-        .select('color_count,label,extra_price')
-        .eq('category_id', catId)
-        .order('color_count');
-      if (data && data.length) {
-        colorSel.innerHTML = `<option value="">${t('selectOption')}</option>` +
-          data.map(c => `<option value="${c.color_count}" data-extra="${c.extra_price||0}">${c.label || (c.color_count + ' ' + t('colorUnit'))}</option>`).join('');
-      } else {
-        colorSel.innerHTML = `<option value="">${t('selectOption')}</option>` +
-          [1,2,3,4].map(n => `<option value="${n}" data-extra="0">${n===4 ? t('fullColor') : n + ' ' + t('colorUnit')}</option>`).join('');
-      }
-    } catch (err) { console.warn(err); }
+    if (!subcat || !subcat.colorCounts) return;
+
+    const colorNames = { 1: '۱ رنگ', 2: '۲ رنگ', 3: '۳ رنگ', 4: '۴ رنگ (فول کالر)' };
+    colorSel.innerHTML = `<option value="">${t('selectOption')}</option>` +
+      subcat.colorCounts.map(n => `<option value="${n}" data-extra="0">${colorNames[n] || (n + ' ' + t('colorUnit'))}</option>`).join('');
   },
 
-  async onColorCountChange() {
+  onColorCountChange() {
     Dashboard.updateBasePrice();
     Dashboard.updateCategorySample();
   },
 
-  // ─── Sample image for selected category + color count ──────
-  async updateCategorySample() {
+  // ─── Sample image for selected category + exec method ────
+  updateCategorySample() {
     const box = document.getElementById('category-sample-box');
     const img = document.getElementById('category-sample-img');
     if (!box || !img) return;
 
-    const catId = Dashboard._currentColorCatId || Dashboard._currentMainCatId;
-    const colorCount = document.getElementById('color-count')?.value;
+    var sampleUrl = '';
 
-    if (!catId || !colorCount) {
-      box.classList.add('hidden');
-      img.src = '';
-      return;
+    // Try exec method sample image first
+    if (Dashboard._currentExecMethod && Dashboard._currentExecMethod.sampleImage) {
+      sampleUrl = Dashboard._currentExecMethod.sampleImage;
+    }
+    // Then subcategory sample image
+    else if (Dashboard._currentSubcat && Dashboard._currentSubcat.sampleImage) {
+      sampleUrl = Dashboard._currentSubcat.sampleImage;
+    }
+    // Then main category sample image
+    else if (Dashboard._currentMainCatId) {
+      const cats = Dashboard._getDesignCats();
+      const mainCat = cats.find(c => c.id === Dashboard._currentMainCatId);
+      if (mainCat && mainCat.sampleImage) sampleUrl = mainCat.sampleImage;
     }
 
-    try {
-      const { data } = await supabase
-        .from('category_color_images')
-        .select('image_url')
-        .eq('category_id', catId)
-        .eq('color_count', parseInt(colorCount))
-        .single();
-
-      if (data?.image_url) {
-        img.src = data.image_url;
-        box.classList.remove('hidden');
-      } else {
-        box.classList.add('hidden');
-        img.src = '';
-      }
-    } catch {
+    if (sampleUrl) {
+      img.src = sampleUrl;
+      box.classList.remove('hidden');
+    } else {
       box.classList.add('hidden');
       img.src = '';
     }
   },
 
   updateBasePrice() {
-    // Collect selected options' prices
+    // Use subcategory base price
     let total = 0;
-    ['main-cat','product-type','exec-method'].forEach(id => {
-      const sel = document.getElementById(id);
-      if (sel?.value) {
-        const opt = sel.options[sel.selectedIndex];
-        total += parseFloat(opt?.getAttribute('data-price') || 0);
-      }
-    });
-    // اضافه کردن قیمت مربوط به تعداد رنگ انتخاب‌شده
-    const colorSel = document.getElementById('color-count');
-    if (colorSel?.value) {
-      const colorOpt = colorSel.options[colorSel.selectedIndex];
-      total += parseFloat(colorOpt?.getAttribute('data-extra') || 0);
+    if (Dashboard._currentSubcat && Dashboard._currentSubcat.basePrice) {
+      total = Dashboard._currentSubcat.basePrice;
     }
     const el = document.getElementById('base-price');
     if (el) el.textContent = formatPrice(total);
