@@ -322,59 +322,74 @@ const Dashboard = {
     });
   },
 
-  // ─── Load top-level categories from localStorage ─────────
-  _getDesignCats() {
-    try { return JSON.parse(localStorage.getItem('design_categories') || '[]'); }
-    catch { return []; }
+  // ─── Load top-level categories from Supabase ─────────
+  async _getDesignCats() {
+    if (Dashboard._designCatsCache) return Dashboard._designCatsCache;
+    var SUPABASE_KEY = (typeof SUPABASE_ANON !== 'undefined') ? SUPABASE_ANON : '';
+    var headers = {
+      apikey: SUPABASE_KEY,
+      Authorization: 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json'
+    };
+    var base = 'https://yeuyhsbzbrjxrxdulaiq.supabase.co/rest/v1/';
+    try {
+      var [catsRes, subsRes, execsRes] = await Promise.all([
+        fetch(base + 'design_categories?select=*&order=sort_order', { headers }),
+        fetch(base + 'design_subcategories?select=*&order=sort_order', { headers }),
+        fetch(base + 'design_exec_methods?select=*&order=sort_order', { headers })
+      ]);
+      var cats = await catsRes.json();
+      var subs = await subsRes.json();
+      var execs = await execsRes.json();
+      var result = cats.map(function(cat) {
+        return {
+          id: cat.id, name: cat.name, basePrice: cat.base_price || 0,
+          sampleImage: cat.sample_image || '',
+          subcategories: subs.filter(function(s) { return s.category_id === cat.id; }).map(function(sub) {
+            var colorCounts = sub.color_counts;
+            if (typeof colorCounts === 'string') { try { colorCounts = JSON.parse(colorCounts); } catch(e) { colorCounts = [1,2,3,4]; } }
+            var colorPrices = sub.color_prices;
+            if (typeof colorPrices === 'string') { try { colorPrices = JSON.parse(colorPrices); } catch(e) { colorPrices = {}; } }
+            var colorImages = sub.color_images;
+            if (typeof colorImages === 'string') { try { colorImages = JSON.parse(colorImages); } catch(e) { colorImages = {}; } }
+            return {
+              id: sub.id, name: sub.name, basePrice: sub.base_price || 0,
+              sampleImage: sub.sample_image || '',
+              colorCounts: colorCounts || [1,2,3,4],
+              colorPrices: colorPrices || {},
+              colorImages: colorImages || {},
+              execMethods: execs.filter(function(e) { return e.subcategory_id === sub.id; }).map(function(em) {
+                return { id: em.id, name: em.name, sampleImage: em.sample_image || '' };
+              })
+            };
+          })
+        };
+      });
+      Dashboard._designCatsCache = result;
+      return result;
+    } catch (err) {
+      console.warn('Failed to load design categories:', err);
+      return [];
+    }
   },
 
-  loadMainCategories() {
-    // Seed defaults if empty
-    var existing = Dashboard._getDesignCats();
+  async loadMainCategories() {
+    var existing = await Dashboard._getDesignCats();
     if (existing.length === 0) {
-      // Trigger seed via Admin if available, otherwise seed inline
       if (typeof Admin !== 'undefined' && Admin._seedDesignCats) {
-        Admin._seedDesignCats();
-      } else {
-        var defaults = [
-          { id:'flexo', name:'چاپ فلکسو', sampleImage:'', subcategories:[
-            { id:'packaging', name:'بسته‌بندی', basePrice:500000, colorCounts:[1,2,3,4], execMethods:[
-              { id:'from-photo', name:'از روی عکس', sampleImage:'' },
-              { id:'from-sketch', name:'از روی اتود', sampleImage:'' }
-            ]}
-          ]},
-          { id:'offset', name:'چاپ افست', sampleImage:'', subcategories:[
-            { id:'catalog', name:'کاتالوگ', basePrice:600000, colorCounts:[1,2,3,4], execMethods:[
-              { id:'from-photo', name:'از روی عکس', sampleImage:'' },
-              { id:'from-sketch', name:'از روی اتود', sampleImage:'' }
-            ]}
-          ]},
-          { id:'digital', name:'چاپ دیجیتال', sampleImage:'', subcategories:[
-            { id:'business-card', name:'کارت ویزیت', basePrice:300000, colorCounts:[1,2,3,4], execMethods:[
-              { id:'from-photo', name:'از روی عکس', sampleImage:'' },
-              { id:'from-sketch', name:'از روی اتود', sampleImage:'' }
-            ]}
-          ]},
-          { id:'graphic-design', name:'طراحی گرافیک', sampleImage:'', subcategories:[
-            { id:'logo', name:'لوگو', basePrice:800000, colorCounts:[1,2,3,4], execMethods:[
-              { id:'from-photo', name:'از روی عکس', sampleImage:'' },
-              { id:'from-sketch', name:'از روی اتود', sampleImage:'' }
-            ]}
-          ]}
-        ];
-        localStorage.setItem('design_categories', JSON.stringify(defaults));
-        existing = defaults;
+        await Admin._seedDesignCats();
+        Dashboard._designCatsCache = null;
+        existing = await Dashboard._getDesignCats();
       }
-      existing = Dashboard._getDesignCats();
     }
 
     const sel = document.getElementById('main-cat');
     if (!sel) return;
-    sel.innerHTML = `<option value="">${t('selectOption')}</option>` +
-      existing.map(c => `<option value="${c.id}" data-price="0">${c.name}</option>`).join('');
+    sel.innerHTML = '<option value="">' + t('selectOption') + '</option>' +
+      existing.map(function(c) { return '<option value="' + c.id + '" data-price="0">' + c.name + '</option>'; }).join('');
   },
 
-  onMainCatChange() {
+  async onMainCatChange() {
     const mainId = document.getElementById('main-cat').value;
     const typeSel = document.getElementById('product-type');
     if (!typeSel) return;
@@ -388,14 +403,14 @@ const Dashboard = {
     Dashboard.updateCategorySample();
     if (!mainId) return;
 
-    const cats = Dashboard._getDesignCats();
+    const cats = await Dashboard._getDesignCats();
     const cat = cats.find(c => c.id === mainId);
     if (!cat || !cat.subcategories) return;
     typeSel.innerHTML = `<option value="">${t('selectOption')}</option>` +
       cat.subcategories.map(c => `<option value="${c.id}" data-price="${c.basePrice||0}">${c.name}</option>`).join('');
   },
 
-  onProductTypeChange() {
+  async onProductTypeChange() {
     const typeId  = document.getElementById('product-type').value;
     const execSel = document.getElementById('exec-method');
     if (!execSel) return;
@@ -407,7 +422,7 @@ const Dashboard = {
 
     if (!typeId) { Dashboard._currentSubcat = null; return; }
 
-    const cats = Dashboard._getDesignCats();
+    const cats = await Dashboard._getDesignCats();
     const mainCat = cats.find(c => c.id === Dashboard._currentMainCatId);
     const subcat = mainCat && mainCat.subcategories ? mainCat.subcategories.find(s => s.id === typeId) : null;
     Dashboard._currentSubcat = subcat || null;
@@ -461,11 +476,10 @@ const Dashboard = {
   },
 
   // ─── Sample image for selected category + exec method ────
-  updateCategorySample() {
+  async updateCategorySample() {
     const box = document.getElementById('category-sample-box');
     const img = document.getElementById('category-sample-img');
     if (!box || !img) return;
-
     var sampleUrl = '';
     var selectedColor = (document.getElementById('color-count') || {}).value;
 
@@ -483,7 +497,7 @@ const Dashboard = {
     }
     // 4. Main category sample image
     else if (Dashboard._currentMainCatId) {
-      const cats = Dashboard._getDesignCats();
+      const cats = await Dashboard._getDesignCats();
       const mainCat = cats.find(c => c.id === Dashboard._currentMainCatId);
       if (mainCat && mainCat.sampleImage) sampleUrl = mainCat.sampleImage;
     }
@@ -497,7 +511,7 @@ const Dashboard = {
     }
   },
 
-  updateBasePrice() {
+  async updateBasePrice() {
     var total = 0;
     var colorEl = document.getElementById('color-count');
     var colorVal = colorEl ? String(colorEl.value) : '';
@@ -514,7 +528,7 @@ const Dashboard = {
     }
     // 3. Main category base price
     else if (Dashboard._currentMainCatId) {
-      var cats = Dashboard._getDesignCats();
+      var cats = await Dashboard._getDesignCats();
       var mc = cats.find(function(c) { return c.id === Dashboard._currentMainCatId; });
       if (mc && mc.basePrice) total = mc.basePrice;
     }

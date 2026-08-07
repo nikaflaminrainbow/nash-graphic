@@ -811,11 +811,88 @@ const Admin = {
   },
 
   // ═══════════════════════════════════════
-  //  DESIGN CATEGORIES (localStorage-based)
+  //  DESIGN CATEGORIES (Supabase-based)
   // ═══════════════════════════════════════
-  _getDesignCats() {
-    try { return JSON.parse(localStorage.getItem('design_categories') || '[]'); }
-    catch { return []; }
+  _dcHeaders() {
+    var key = (typeof SUPABASE_ANON !== 'undefined') ? SUPABASE_ANON : '';
+    return {
+      apikey: key,
+      Authorization: 'Bearer ' + key,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation'
+    };
+  },
+  _dcUrl: 'https://yeuyhsbzbrjxrxdulaiq.supabase.co/rest/v1/',
+
+  async _dcGet(table, query) {
+    var url = this._dcUrl + table + '?' + (query || 'select=*');
+    var res = await fetch(url, { headers: this._dcHeaders() });
+    if (!res.ok) throw new Error('DB error: ' + res.status);
+    return await res.json();
+  },
+
+  async _dcPost(table, data) {
+    var res = await fetch(this._dcUrl + table, {
+      method: 'POST',
+      headers: this._dcHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('DB error: ' + res.status);
+    return await res.json();
+  },
+
+  async _dcPatch(table, data, filter) {
+    var url = this._dcUrl + table + '?' + filter;
+    var res = await fetch(url, {
+      method: 'PATCH',
+      headers: this._dcHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('DB error: ' + res.status);
+    return await res.json();
+  },
+
+  async _dcDelete(table, filter) {
+    var url = this._dcUrl + table + '?' + filter;
+    var res = await fetch(url, {
+      method: 'DELETE',
+      headers: this._dcHeaders()
+    });
+    if (!res.ok) throw new Error('DB error: ' + res.status);
+  },
+
+  async _getDesignCats() {
+    var base = this._dcUrl;
+    var headers = this._dcHeaders();
+    var [cats, subs, execs] = await Promise.all([
+      this._dcGet('design_categories', 'select=*&order=sort_order'),
+      this._dcGet('design_subcategories', 'select=*&order=sort_order'),
+      this._dcGet('design_exec_methods', 'select=*&order=sort_order')
+    ]);
+    return cats.map(function(cat) {
+      return {
+        id: cat.id, name: cat.name, basePrice: cat.base_price || 0,
+        sampleImage: cat.sample_image || '',
+        subcategories: subs.filter(function(s) { return s.category_id === cat.id; }).map(function(sub) {
+          var colorCounts = sub.color_counts;
+          if (typeof colorCounts === 'string') { try { colorCounts = JSON.parse(colorCounts); } catch(e) { colorCounts = [1,2,3,4]; } }
+          var colorPrices = sub.color_prices;
+          if (typeof colorPrices === 'string') { try { colorPrices = JSON.parse(colorPrices); } catch(e) { colorPrices = {}; } }
+          var colorImages = sub.color_images;
+          if (typeof colorImages === 'string') { try { colorImages = JSON.parse(colorImages); } catch(e) { colorImages = {}; } }
+          return {
+            id: sub.id, name: sub.name, basePrice: sub.base_price || 0,
+            sampleImage: sub.sample_image || '',
+            colorCounts: colorCounts || [1,2,3,4],
+            colorPrices: colorPrices || {},
+            colorImages: colorImages || {},
+            execMethods: execs.filter(function(e) { return e.subcategory_id === sub.id; }).map(function(em) {
+              return { id: em.id, name: em.name, sampleImage: em.sample_image || '' };
+            })
+          };
+        })
+      };
+    });
   },
 
   // ─── IMAGE UPLOAD HELPER ────────────────────────────
@@ -888,11 +965,8 @@ const Admin = {
     });
   },
 
-  _saveDesignCats(cats) {
-    localStorage.setItem('design_categories', JSON.stringify(cats));
-  },
-  _seedDesignCats() {
-    var existing = Admin._getDesignCats();
+  async _seedDesignCats() {
+    var existing = await this._getDesignCats();
     if (existing.length > 0) return;
     var defaults = [
       {
@@ -936,13 +1010,36 @@ const Admin = {
         }]
       }
     ];
-    Admin._saveDesignCats(defaults);
+    for (var i = 0; i < defaults.length; i++) {
+      var cat = defaults[i];
+      await this._dcPost('design_categories', {
+        id: cat.id, name: cat.name, sample_image: cat.sampleImage,
+        base_price: 0, sort_order: i + 1
+      });
+      for (var j = 0; j < cat.subcategories.length; j++) {
+        var sub = cat.subcategories[j];
+        await this._dcPost('design_subcategories', {
+          id: sub.id, category_id: cat.id, name: sub.name,
+          base_price: sub.basePrice, color_counts: sub.colorCounts,
+          color_prices: {}, color_images: {},
+          sample_image: '', sort_order: j + 1
+        });
+        for (var k = 0; k < sub.execMethods.length; k++) {
+          var em = sub.execMethods[k];
+          await this._dcPost('design_exec_methods', {
+            id: em.id, subcategory_id: sub.id, name: em.name,
+            sample_image: em.sampleImage, sort_order: k + 1
+          });
+        }
+      }
+    }
   },
 
-  renderDesignCategories() {
-    Admin._seedDesignCats();
+  async renderDesignCategories() {
+    await Admin._seedDesignCats();
+    if (typeof Dashboard !== 'undefined') Dashboard._designCatsCache = null;
     var el = document.getElementById('admin-content');
-    var cats = Admin._getDesignCats();
+    var cats = await Admin._getDesignCats();
 
     var html = '<div style="margin-bottom:1.5rem">' +
       '<h3 style="margin-bottom:0.5rem">🎨 مدیریت دسته‌بندی طراحی</h3>' +
@@ -1089,8 +1186,8 @@ const Admin = {
     document.getElementById('dc-edit-id').value = '';
   },
 
-  editDesignCat(catId) {
-    var cats = Admin._getDesignCats();
+  async editDesignCat(catId) {
+    var cats = await Admin._getDesignCats();
     var cat = cats.find(function(c) { return c.id === catId; });
     if (!cat) return;
     document.getElementById('dc-add-form').classList.remove('hidden');
@@ -1100,51 +1197,68 @@ const Admin = {
     document.getElementById('dc-edit-id').value = catId;
   },
 
-  saveDesignCat() {
+  async saveDesignCat() {
     var name = document.getElementById('dc-name').value.trim();
     var sampleImg = document.getElementById('dc-sample-img').value.trim();
     var editId = document.getElementById('dc-edit-id').value;
     if (!name) { toast('لطفاً نام دسته‌بندی را وارد کنید', 'warning'); return; }
 
-    var cats = Admin._getDesignCats();
     if (editId) {
-      var cat = cats.find(function(c) { return c.id === editId; });
-      if (cat) { cat.name = name; cat.sampleImage = sampleImg; }
+      await Admin._dcPatch('design_categories',
+        { name: name, sample_image: sampleImg },
+        'id=eq.' + encodeURIComponent(editId)
+      );
     } else {
       var slug = name.replace(/\s+/g, '-').toLowerCase().replace(/[^a-z0-9\-]/g, '') || ('cat-' + Date.now());
-      cats.push({ id: slug, name: name, sampleImage: sampleImg, subcategories: [] });
+      var existing = await Admin._dcGet('design_categories', 'select=sort_order&order=sort_order.desc&limit=1');
+      var maxOrder = (existing.length > 0) ? (existing[0].sort_order || 0) + 1 : 1;
+      await Admin._dcPost('design_categories', {
+        id: slug, name: name, sample_image: sampleImg,
+        base_price: 0, sort_order: maxOrder
+      });
     }
-    Admin._saveDesignCats(cats);
     toast(editId ? 'دسته‌بندی ویرایش شد ✓' : 'دسته‌بندی اضافه شد ✓', 'success');
     Admin.closeDesignCatForm();
     Admin.renderDesignCategories();
   },
 
-  deleteDesignCat(catId) {
-    var cats = Admin._getDesignCats();
+  async deleteDesignCat(catId) {
+    var cats = await Admin._getDesignCats();
     var cat = cats.find(function(c) { return c.id === catId; });
     if (!confirm('حذف دسته‌بندی «' + (cat?.name || '') + '»؟')) return;
-    Admin._saveDesignCats(cats.filter(function(c) { return c.id !== catId; }));
+    for (var i = 0; i < (cat.subcategories || []).length; i++) {
+      var sub = cat.subcategories[i];
+      await Admin._dcDelete('design_exec_methods', 'subcategory_id=eq.' + encodeURIComponent(sub.id));
+      await Admin._dcDelete('design_subcategories', 'id=eq.' + encodeURIComponent(sub.id));
+    }
+    await Admin._dcDelete('design_categories', 'id=eq.' + encodeURIComponent(catId));
     toast('حذف شد ✓', 'success');
     Admin.renderDesignCategories();
   },
 
-  addDesignSubcat(catId) {
-    var cats = Admin._getDesignCats();
+  async addDesignSubcat(catId) {
+    var cats = await Admin._getDesignCats();
     var cat = cats.find(function(c) { return c.id === catId; });
     if (!cat) return;
     var name = prompt('نام زیرمجموعه جدید:');
     if (!name || !name.trim()) return;
     var slug = name.trim().replace(/\s+/g, '-').toLowerCase().replace(/[^a-z0-9\-]/g, '') || ('sub-' + Date.now());
-    if (!cat.subcategories) cat.subcategories = [];
-    cat.subcategories.push({
-      id: slug, name: name.trim(), basePrice: 0, colorCounts: [1,2,3,4],
-      execMethods: [
-        { id: 'from-photo', name: 'از روی عکس', sampleImage: '' },
-        { id: 'from-sketch', name: 'از روی اتود', sampleImage: '' }
-      ]
+    var existingSubs = await Admin._dcGet('design_subcategories',
+      'select=sort_order&category_id=eq.' + encodeURIComponent(catId) + '&order=sort_order.desc&limit=1');
+    var maxOrder = (existingSubs.length > 0) ? (existingSubs[0].sort_order || 0) + 1 : 1;
+    await Admin._dcPost('design_subcategories', {
+      id: slug, category_id: catId, name: name.trim(), base_price: 0,
+      color_counts: [1,2,3,4], color_prices: {}, color_images: {},
+      sample_image: '', sort_order: maxOrder
     });
-    Admin._saveDesignCats(cats);
+    await Admin._dcPost('design_exec_methods', {
+      id: 'from-photo-' + slug, subcategory_id: slug, name: 'از روی عکس',
+      sample_image: '', sort_order: 1
+    });
+    await Admin._dcPost('design_exec_methods', {
+      id: 'from-sketch-' + slug, subcategory_id: slug, name: 'از روی اتود',
+      sample_image: '', sort_order: 2
+    });
     toast('زیرمجموعه اضافه شد ✓', 'success');
     Admin.renderDesignCategories();
   },
@@ -1159,20 +1273,18 @@ const Admin = {
     }
   },
 
-  saveDesignSubcat(catId, subId) {
-    var cats = Admin._getDesignCats();
-    var cat = cats.find(function(c) { return c.id === catId; });
-    if (!cat) return;
-    var sub = (cat.subcategories || []).find(function(s) { return s.id === subId; });
-    if (!sub) return;
-    sub.name = document.getElementById('dsc-name-' + catId + '-' + subId).value.trim() || sub.name;
+  async saveDesignSubcat(catId, subId) {
+    var name = document.getElementById('dsc-name-' + catId + '-' + subId).value.trim();
     var priceVal = (document.getElementById('dsc-price-' + catId + '-' + subId).value || '').replace(/[۰-۹]/g, function(d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); });
-    sub.basePrice = parseInt(priceVal) || 0;
-    sub.sampleImage = document.getElementById('dsc-img-' + catId + '-' + subId).value.trim();
-    // Save per-color images and prices
+    var basePrice = parseInt(priceVal) || 0;
+    var sampleImg = document.getElementById('dsc-img-' + catId + '-' + subId).value.trim();
+    // Gather per-color images and prices from current sub
+    var cats = await Admin._getDesignCats();
+    var cat = cats.find(function(c) { return c.id === catId; });
+    var sub = cat && (cat.subcategories || []).find(function(s) { return s.id === subId; });
     var colorImgs = {};
     var colorPrices = {};
-    var ccList = sub.colorCounts || [1,2,3,4];
+    var ccList = (sub && sub.colorCounts) || [1,2,3,4];
     ccList.forEach(function(cc) {
       var imgEl = document.getElementById('dsc-cimg-' + catId + '-' + subId + '-' + cc);
       if (imgEl && imgEl.value.trim()) colorImgs[cc] = imgEl.value.trim();
@@ -1182,20 +1294,17 @@ const Admin = {
         colorPrices[cc] = parseInt(pv) || 0;
       }
     });
-    sub.colorImages = colorImgs;
-    sub.colorPrices = colorPrices;
-    Admin._saveDesignCats(cats);
+    var updateData = { base_price: basePrice, sample_image: sampleImg, color_prices: colorPrices, color_images: colorImgs };
+    if (name) updateData.name = name;
+    await Admin._dcPatch('design_subcategories', updateData, 'id=eq.' + encodeURIComponent(subId));
     toast('زیرمجموعه ذخیره شد ✓', 'success');
     Admin.renderDesignCategories();
   },
 
-  deleteDesignSubcat(catId, subId) {
+  async deleteDesignSubcat(catId, subId) {
     if (!confirm('حذف این زیرمجموعه؟')) return;
-    var cats = Admin._getDesignCats();
-    var cat = cats.find(function(c) { return c.id === catId; });
-    if (!cat) return;
-    cat.subcategories = (cat.subcategories || []).filter(function(s) { return s.id !== subId; });
-    Admin._saveDesignCats(cats);
+    await Admin._dcDelete('design_exec_methods', 'subcategory_id=eq.' + encodeURIComponent(subId));
+    await Admin._dcDelete('design_subcategories', 'id=eq.' + encodeURIComponent(subId));
     toast('حذف شد ✓', 'success');
     Admin.renderDesignCategories();
   },
@@ -1205,60 +1314,50 @@ const Admin = {
     if (formEl) formEl.classList.toggle('hidden');
   },
 
-  saveDesignExecMethod(catId, subId) {
-    var cats = Admin._getDesignCats();
-    var cat = cats.find(function(c) { return c.id === catId; });
-    if (!cat) return;
-    var sub = (cat.subcategories || []).find(function(s) { return s.id === subId; });
-    if (!sub) return;
+  async saveDesignExecMethod(catId, subId) {
     var name = document.getElementById('dem-name-' + catId + '-' + subId).value.trim();
     var sampleImg = document.getElementById('dem-img-' + catId + '-' + subId).value.trim();
     if (!name) { toast('نام نحوه اجرا را وارد کنید', 'warning'); return; }
-    if (!sub.execMethods) sub.execMethods = [];
     var slug = name.replace(/\s+/g, '-').toLowerCase().replace(/[^a-z0-9\-]/g, '') || ('em-' + Date.now());
-    sub.execMethods.push({ id: slug, name: name, sampleImage: sampleImg });
-    Admin._saveDesignCats(cats);
+    var existingEms = await Admin._dcGet('design_exec_methods',
+      'select=sort_order&subcategory_id=eq.' + encodeURIComponent(subId) + '&order=sort_order.desc&limit=1');
+    var maxOrder = (existingEms.length > 0) ? (existingEms[0].sort_order || 0) + 1 : 1;
+    await Admin._dcPost('design_exec_methods', {
+      id: slug, subcategory_id: subId, name: name,
+      sample_image: sampleImg, sort_order: maxOrder
+    });
     toast('نحوه اجرا اضافه شد ✓', 'success');
     Admin.renderDesignCategories();
   },
 
-  removeDesignExecMethod(catId, subId, emId) {
-    var cats = Admin._getDesignCats();
-    var cat = cats.find(function(c) { return c.id === catId; });
-    if (!cat) return;
-    var sub = (cat.subcategories || []).find(function(s) { return s.id === subId; });
-    if (!sub) return;
-    sub.execMethods = (sub.execMethods || []).filter(function(e) { return e.id !== emId; });
-    Admin._saveDesignCats(cats);
+  async removeDesignExecMethod(catId, subId, emId) {
+    await Admin._dcDelete('design_exec_methods', 'id=eq.' + encodeURIComponent(emId));
     toast('حذف شد ✓', 'success');
     Admin.renderDesignCategories();
   },
 
-  addDesignColorCount(catId, subId) {
-    var cats = Admin._getDesignCats();
-    var cat = cats.find(function(c) { return c.id === catId; });
-    if (!cat) return;
-    var sub = (cat.subcategories || []).find(function(s) { return s.id === subId; });
-    if (!sub) return;
+  async addDesignColorCount(catId, subId) {
     var count = parseInt(prompt('تعداد رنگ جدید (مثلاً 5):'));
     if (!count || count < 1 || count > 16) { toast('تعداد رنگ باید بین ۱ تا ۱۶ باشد', 'warning'); return; }
-    if (!sub.colorCounts) sub.colorCounts = [];
-    if (sub.colorCounts.indexOf(count) !== -1) { toast('این تعداد رنگ قبلاً اضافه شده', 'warning'); return; }
-    sub.colorCounts.push(count);
-    sub.colorCounts.sort(function(a, b) { return a - b; });
-    Admin._saveDesignCats(cats);
+    var cats = await Admin._getDesignCats();
+    var cat = cats.find(function(c) { return c.id === catId; });
+    var sub = cat && (cat.subcategories || []).find(function(s) { return s.id === subId; });
+    if (!sub) return;
+    var currentCounts = sub.colorCounts || [];
+    if (currentCounts.indexOf(count) !== -1) { toast('این تعداد رنگ قبلاً اضافه شده', 'warning'); return; }
+    var newCounts = currentCounts.concat([count]).sort(function(a, b) { return a - b; });
+    await Admin._dcPatch('design_subcategories', { color_counts: newCounts }, 'id=eq.' + encodeURIComponent(subId));
     toast('تعداد رنگ اضافه شد ✓', 'success');
     Admin.renderDesignCategories();
   },
 
-  removeDesignColorCount(catId, subId, count) {
-    var cats = Admin._getDesignCats();
+  async removeDesignColorCount(catId, subId, count) {
+    var cats = await Admin._getDesignCats();
     var cat = cats.find(function(c) { return c.id === catId; });
-    if (!cat) return;
-    var sub = (cat.subcategories || []).find(function(s) { return s.id === subId; });
+    var sub = cat && (cat.subcategories || []).find(function(s) { return s.id === subId; });
     if (!sub) return;
-    sub.colorCounts = (sub.colorCounts || []).filter(function(c) { return c !== count; });
-    Admin._saveDesignCats(cats);
+    var newCounts = (sub.colorCounts || []).filter(function(c) { return c !== count; });
+    await Admin._dcPatch('design_subcategories', { color_counts: newCounts }, 'id=eq.' + encodeURIComponent(subId));
     toast('حذف شد ✓', 'success');
     Admin.renderDesignCategories();
   },
