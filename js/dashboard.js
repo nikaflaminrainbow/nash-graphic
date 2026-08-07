@@ -499,18 +499,25 @@ const Dashboard = {
 
   updateBasePrice() {
     var total = 0;
-    // Priority: subcategory > main category
-    if (Dashboard._currentSubcat && Dashboard._currentSubcat.basePrice) {
+    var colorEl = document.getElementById('color-count');
+    var colorVal = colorEl ? String(colorEl.value) : '';
+
+    // 1. Check per-color price (highest priority)
+    if (colorVal && Dashboard._currentSubcat && Dashboard._currentSubcat.colorPrices && Dashboard._currentSubcat.colorPrices[colorVal]) {
+      total = Dashboard._currentSubcat.colorPrices[colorVal];
+    }
+    // 2. Subcategory base price × color count
+    else if (Dashboard._currentSubcat && Dashboard._currentSubcat.basePrice) {
       total = Dashboard._currentSubcat.basePrice;
-    } else if (Dashboard._currentMainCatId) {
+      var cv = parseInt(colorVal) || 1;
+      if (cv > 1) total = total * cv;
+    }
+    // 3. Main category base price
+    else if (Dashboard._currentMainCatId) {
       var cats = Dashboard._getDesignCats();
       var mc = cats.find(function(c) { return c.id === Dashboard._currentMainCatId; });
       if (mc && mc.basePrice) total = mc.basePrice;
     }
-    // Multiply by color count if set
-    var colorEl = document.getElementById('color-count');
-    var colorVal = colorEl ? parseInt(colorEl.value) || 1 : 1;
-    if (colorVal > 1) total = total * colorVal;
 
     var el = document.getElementById('base-price');
     if (el) el.textContent = formatPrice(total) + ' تومان';

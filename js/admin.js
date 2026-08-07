@@ -1004,19 +1004,25 @@ const Admin = {
         html += '<div><label class="label">نام زیرمجموعه</label><input id="dsc-name-' + catId + '-' + subId + '" type="text" class="input" value="' + (sub.name||'') + '" /></div>';
         html += '<div><label class="label">قیمت پایه (تومان)</label><input id="dsc-price-' + catId + '-' + subId + '" type="number" class="input" value="' + (sub.basePrice||0) + '" /></div>';
         html += '<div style="grid-column:1/-1"><label class="label">تصویر نمونه کلی</label><div style="display:flex;gap:0.4rem;align-items:center"><input id="dsc-img-' + catId + '-' + subId + '" type="text" class="input" value="' + (sub.sampleImage||'') + '" style="direction:ltr;text-align:left;flex:1" placeholder="URL یا آپلود" />' + Admin._makeUploadBtn('up-gen-' + catId + '-' + subId, 'dsc-img-' + catId + '-' + subId) + '</div></div>';
-        // Per-color images
+        // Per-color images + prices
         var colorImgs = sub.colorImages || {};
+        var colorPrices = sub.colorPrices || {};
         var colorCounts = sub.colorCounts || [1,2,3,4];
-        html += '<div style="grid-column:1/-1"><label class="label" style="font-size:0.85rem">🖼️ تصاویر نمونه به ازای هر رنگ</label>';
-        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.3rem">';
+        html += '<div style="grid-column:1/-1"><label class="label" style="font-size:0.85rem">🎨 تصاویر و قیمت به ازای هر رنگ</label>';
+        html += '<div style="display:grid;grid-template-columns:1fr;gap:0.5rem;margin-top:0.3rem">';
         colorCounts.forEach(function(cc) {
           var imgVal = colorImgs[cc] || '';
+          var priceVal = colorPrices[cc] || '';
           var inputId = 'dsc-cimg-' + catId + '-' + subId + '-' + cc;
+          var priceId = 'dsc-cprice-' + catId + '-' + subId + '-' + cc;
           var upId = 'up-c' + catId + '-' + subId + '-' + cc;
-          html += '<div style="display:flex;align-items:center;gap:0.3rem;background:var(--glass-bg,rgba(255,255,255,0.03));border:1px solid var(--glass-border,rgba(255,255,255,0.1));border-radius:8px;padding:0.3rem">';
-          html += '<span style="font-size:0.75rem;color:var(--accent);white-space:nowrap;min-width:45px">' + cc + 'رنگ:</span>';
-          html += '<input id="' + inputId + '" type="text" class="input" value="' + imgVal + '" style="font-size:0.75rem;direction:ltr;text-align:left;padding:0.3rem;flex:1;min-width:0" placeholder="URL" />';
-          html += '<label for="' + upId + '" style="cursor:pointer;font-size:0.7rem;padding:0.2rem 0.4rem;background:var(--accent);border-radius:4px;color:#000">📷</label>';
+          html += '<div style="display:flex;align-items:center;gap:0.4rem;background:var(--glass-bg,rgba(255,255,255,0.03));border:1px solid var(--glass-border,rgba(255,255,255,0.1));border-radius:8px;padding:0.4rem 0.5rem">';
+          html += '<span style="font-size:0.8rem;color:var(--accent);white-space:nowrap;min-width:45px;font-weight:bold">' + cc + ' رنگ:</span>';
+          // Price input
+          html += '<input id="' + priceId + '" type="number" class="input" value="' + priceVal + '" style="font-size:0.8rem;direction:ltr;text-align:left;padding:0.3rem;width:110px" placeholder="قیمت (تومان)" />';
+          // Image input
+          html += '<input id="' + inputId + '" type="text" class="input" value="' + imgVal + '" style="font-size:0.75rem;direction:ltr;text-align:left;padding:0.3rem;flex:1;min-width:0" placeholder="URL عکس" />';
+          html += '<label for="' + upId + '" style="cursor:pointer;font-size:0.85rem;padding:0.3rem 0.5rem;background:var(--accent);border-radius:4px;color:#000;cursor:pointer">📷</label>';
           html += '<input id="' + upId + '" type="file" accept="image/*" style="display:none" onchange="Admin._handleUpload(this, \'' + inputId + '\')" />';
           html += '</div>';
         });
@@ -1163,14 +1169,21 @@ const Admin = {
     var priceVal = (document.getElementById('dsc-price-' + catId + '-' + subId).value || '').replace(/[۰-۹]/g, function(d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); });
     sub.basePrice = parseInt(priceVal) || 0;
     sub.sampleImage = document.getElementById('dsc-img-' + catId + '-' + subId).value.trim();
-    // Save per-color images
+    // Save per-color images and prices
     var colorImgs = {};
+    var colorPrices = {};
     var ccList = sub.colorCounts || [1,2,3,4];
     ccList.forEach(function(cc) {
-      var el = document.getElementById('dsc-cimg-' + catId + '-' + subId + '-' + cc);
-      if (el && el.value.trim()) colorImgs[cc] = el.value.trim();
+      var imgEl = document.getElementById('dsc-cimg-' + catId + '-' + subId + '-' + cc);
+      if (imgEl && imgEl.value.trim()) colorImgs[cc] = imgEl.value.trim();
+      var priceEl = document.getElementById('dsc-cprice-' + catId + '-' + subId + '-' + cc);
+      if (priceEl && priceEl.value) {
+        var pv = (priceEl.value || '').replace(/[۰-۹]/g, function(d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); });
+        colorPrices[cc] = parseInt(pv) || 0;
+      }
     });
     sub.colorImages = colorImgs;
+    sub.colorPrices = colorPrices;
     Admin._saveDesignCats(cats);
     toast('زیرمجموعه ذخیره شد ✓', 'success');
     Admin.renderDesignCategories();
