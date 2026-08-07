@@ -1202,24 +1202,28 @@ const Admin = {
     var sampleImg = document.getElementById('dc-sample-img').value.trim();
     var editId = document.getElementById('dc-edit-id').value;
     if (!name) { toast('لطفاً نام دسته‌بندی را وارد کنید', 'warning'); return; }
-
-    if (editId) {
-      await Admin._dcPatch('design_categories',
-        { name: name, sample_image: sampleImg },
-        'id=eq.' + encodeURIComponent(editId)
-      );
-    } else {
-      var slug = name.replace(/\s+/g, '-').toLowerCase().replace(/[^a-z0-9\-]/g, '') || ('cat-' + Date.now());
-      var existing = await Admin._dcGet('design_categories', 'select=sort_order&order=sort_order.desc&limit=1');
-      var maxOrder = (existing.length > 0) ? (existing[0].sort_order || 0) + 1 : 1;
-      await Admin._dcPost('design_categories', {
-        id: slug, name: name, sample_image: sampleImg,
-        base_price: 0, sort_order: maxOrder
-      });
+    try {
+      if (editId) {
+        await Admin._dcPatch('design_categories',
+          { name: name, sample_image: sampleImg },
+          'id=eq.' + encodeURIComponent(editId)
+        );
+      } else {
+        var slug = 'cat-' + Date.now();
+        var existing = await Admin._dcGet('design_categories', 'select=sort_order&order=sort_order.desc&limit=1');
+        var maxOrder = (existing.length > 0) ? (existing[0].sort_order || 0) + 1 : 1;
+        await Admin._dcPost('design_categories', {
+          id: slug, name: name, sample_image: sampleImg,
+          base_price: 0, sort_order: maxOrder
+        });
+      }
+      toast(editId ? 'دسته‌بندی ویرایش شد ✓' : 'دسته‌بندی اضافه شد ✓', 'success');
+      Admin.closeDesignCatForm();
+      Admin.renderDesignCategories();
+    } catch(err) {
+      console.error('[Cat Save]', err);
+      toast('خطا در ذخیره: ' + err.message, 'error');
     }
-    toast(editId ? 'دسته‌بندی ویرایش شد ✓' : 'دسته‌بندی اضافه شد ✓', 'success');
-    Admin.closeDesignCatForm();
-    Admin.renderDesignCategories();
   },
 
   async deleteDesignCat(catId) {
@@ -1274,6 +1278,7 @@ const Admin = {
   },
 
   async saveDesignSubcat(catId, subId) {
+    try {
     var name = document.getElementById('dsc-name-' + catId + '-' + subId).value.trim();
     var priceVal = (document.getElementById('dsc-price-' + catId + '-' + subId).value || '').replace(/[۰-۹]/g, function(d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); });
     var basePrice = parseInt(priceVal) || 0;
@@ -1299,6 +1304,7 @@ const Admin = {
     await Admin._dcPatch('design_subcategories', updateData, 'id=eq.' + encodeURIComponent(subId));
     toast('زیرمجموعه ذخیره شد ✓', 'success');
     Admin.renderDesignCategories();
+    } catch(err) { console.error("[Subcat Save]", err); toast("خطا: " + err.message, "error"); }
   },
 
   async deleteDesignSubcat(catId, subId) {
