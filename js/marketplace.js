@@ -524,7 +524,7 @@ const Marketplace = {
     var grid = document.getElementById('marketplace-stock-grid');
     if (!grid) return;
     if (typeof supabase === 'undefined') { setTimeout(function(){ Marketplace.loadStockImages(); }, 500); return; }
-    supabase.from('stock_images').select('*').eq('is_approved', true).order('created_at', { ascending: false }).limit(100).then(function(result) {
+    supabase.from('stock_images').select('*').eq('is_approved', true).order('created_at', { ascending: false }).limit(500).then(function(result) {
       if (result.error) { console.error('Stock error:', result.error); return; }
       Marketplace._stockImages = result.data || [];
       Marketplace._stockFiltered = Marketplace._stockImages.slice();
