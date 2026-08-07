@@ -817,6 +817,53 @@ const Admin = {
     try { return JSON.parse(localStorage.getItem('design_categories') || '[]'); }
     catch { return []; }
   },
+
+  // ─── IMAGE UPLOAD HELPER ────────────────────────────
+  _uploadSampleImage: function(file, callback) {
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { toast('حجم عکس حداکثر ۲ مگابایت باشد', 'error'); return; }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var base64 = e.target.result;
+      var path = 'design-samples/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+      var bucket = 'design-samples';
+      // Try upload, if bucket doesn't exist create it first
+      supabase.storage.from(bucket).upload(path, base64, { contentType: file.type, upsert: false })
+        .then(function(r) {
+          if (r.error && r.error.message && r.error.message.indexOf('Bucket not found') >= 0) {
+            // Auto-create bucket
+            return supabase.storage.createBucket(bucket, { public: true, fileSizeLimit: 2097152 })
+              .then(function() {
+                return supabase.storage.from(bucket).upload(path, base64, { contentType: file.type, upsert: false });
+              });
+          }
+          return r;
+        })
+        .then(function(r) {
+          if (r.error) { console.error('Upload error:', r.error); toast('خطا در آپلود: ' + r.error.message, 'error'); return; }
+          var url = supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+          toast('عکس آپلود شد ✓', 'success');
+          if (callback) callback(url);
+        })
+        .catch(function(err) { console.error('Upload err:', err); toast('خطا در آپلود', 'error'); });
+    };
+    reader.readAsDataURL(file);
+  },
+
+  _makeUploadBtn: function(inputId, targetInputId) {
+    return '<label for="' + inputId + '" class="btn btn-sm btn-ghost" style="cursor:pointer;font-size:0.8rem">📷 آپلود</label>' +
+      '<input id="' + inputId + '" type="file" accept="image/*" style="display:none" onchange="Admin._handleUpload(this, \'' + targetInputId + '\')" />';
+  },
+
+  _handleUpload: function(fileInput, targetId) {
+    var file = fileInput.files[0];
+    if (!file) return;
+    Admin._uploadSampleImage(file, function(url) {
+      var el = document.getElementById(targetId);
+      if (el) el.value = url;
+    });
+  },
+
   _saveDesignCats(cats) {
     localStorage.setItem('design_categories', JSON.stringify(cats));
   },
@@ -932,16 +979,21 @@ const Admin = {
         html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">';
         html += '<div><label class="label">نام زیرمجموعه</label><input id="dsc-name-' + catId + '-' + subId + '" type="text" class="input" value="' + (sub.name||'') + '" /></div>';
         html += '<div><label class="label">قیمت پایه (تومان)</label><input id="dsc-price-' + catId + '-' + subId + '" type="number" class="input" value="' + (sub.basePrice||0) + '" /></div>';
-        html += '<div style="grid-column:1/-1"><label class="label">تصویر نمونه کلی (URL)</label><input id="dsc-img-' + catId + '-' + subId + '" type="text" class="input" value="' + (sub.sampleImage||'') + '" style="direction:ltr;text-align:left" placeholder="https://..." /></div>';
+        html += '<div style="grid-column:1/-1"><label class="label">تصویر نمونه کلی</label><div style="display:flex;gap:0.4rem;align-items:center"><input id="dsc-img-' + catId + '-' + subId + '" type="text" class="input" value="' + (sub.sampleImage||'') + '" style="direction:ltr;text-align:left;flex:1" placeholder="URL یا آپلود" />' + Admin._makeUploadBtn('up-gen-' + catId + '-' + subId, 'dsc-img-' + catId + '-' + subId) + '</div></div>';
         // Per-color images
         var colorImgs = sub.colorImages || {};
         var colorCounts = sub.colorCounts || [1,2,3,4];
         html += '<div style="grid-column:1/-1"><label class="label" style="font-size:0.85rem">🖼️ تصاویر نمونه به ازای هر رنگ</label>';
         html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.3rem">';
         colorCounts.forEach(function(cc) {
-          html += '<div style="display:flex;align-items:center;gap:0.4rem">';
-          html += '<span style="font-size:0.8rem;color:var(--accent);white-space:nowrap;min-width:60px">' + cc + ' رنگ:</span>';
-          html += '<input id="dsc-cimg-' + catId + '-' + subId + '-' + cc + '" type="text" class="input" value="' + (colorImgs[cc]||'') + '" style="font-size:0.8rem;direction:ltr;text-align:left;padding:0.4rem" placeholder="URL عکس" />';
+          var imgVal = colorImgs[cc] || '';
+          var inputId = 'dsc-cimg-' + catId + '-' + subId + '-' + cc;
+          var upId = 'up-c' + catId + '-' + subId + '-' + cc;
+          html += '<div style="display:flex;align-items:center;gap:0.3rem;background:var(--glass-bg,rgba(255,255,255,0.03));border:1px solid var(--glass-border,rgba(255,255,255,0.1));border-radius:8px;padding:0.3rem">';
+          html += '<span style="font-size:0.75rem;color:var(--accent);white-space:nowrap;min-width:45px">' + cc + 'رنگ:</span>';
+          html += '<input id="' + inputId + '" type="text" class="input" value="' + imgVal + '" style="font-size:0.75rem;direction:ltr;text-align:left;padding:0.3rem;flex:1;min-width:0" placeholder="URL" />';
+          html += '<label for="' + upId + '" style="cursor:pointer;font-size:0.7rem;padding:0.2rem 0.4rem;background:var(--accent);border-radius:4px;color:#000">📷</label>';
+          html += '<input id="' + upId + '" type="file" accept="image/*" style="display:none" onchange="Admin._handleUpload(this, \'' + inputId + '\')" />';
           html += '</div>';
         });
         html += '</div></div>';
