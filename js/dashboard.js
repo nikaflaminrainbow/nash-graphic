@@ -467,16 +467,21 @@ const Dashboard = {
     if (!box || !img) return;
 
     var sampleUrl = '';
+    var selectedColor = (document.getElementById('color-count') || {}).value;
 
-    // Try exec method sample image first
-    if (Dashboard._currentExecMethod && Dashboard._currentExecMethod.sampleImage) {
+    // 1. Per-color image (highest priority)
+    if (selectedColor && Dashboard._currentSubcat && Dashboard._currentSubcat.colorImages && Dashboard._currentSubcat.colorImages[selectedColor]) {
+      sampleUrl = Dashboard._currentSubcat.colorImages[selectedColor];
+    }
+    // 2. Exec method sample image
+    else if (Dashboard._currentExecMethod && Dashboard._currentExecMethod.sampleImage) {
       sampleUrl = Dashboard._currentExecMethod.sampleImage;
     }
-    // Then subcategory sample image
+    // 3. Subcategory general sample image
     else if (Dashboard._currentSubcat && Dashboard._currentSubcat.sampleImage) {
       sampleUrl = Dashboard._currentSubcat.sampleImage;
     }
-    // Then main category sample image
+    // 4. Main category sample image
     else if (Dashboard._currentMainCatId) {
       const cats = Dashboard._getDesignCats();
       const mainCat = cats.find(c => c.id === Dashboard._currentMainCatId);

@@ -932,7 +932,19 @@ const Admin = {
         html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">';
         html += '<div><label class="label">نام زیرمجموعه</label><input id="dsc-name-' + catId + '-' + subId + '" type="text" class="input" value="' + (sub.name||'') + '" /></div>';
         html += '<div><label class="label">قیمت پایه (تومان)</label><input id="dsc-price-' + catId + '-' + subId + '" type="number" class="input" value="' + (sub.basePrice||0) + '" /></div>';
-        html += '<div style="grid-column:1/-1"><label class="label">تصویر نمونه (URL)</label><input id="dsc-img-' + catId + '-' + subId + '" type="text" class="input" value="' + (sub.sampleImage||'') + '" style="direction:ltr;text-align:left" /></div>';
+        html += '<div style="grid-column:1/-1"><label class="label">تصویر نمونه کلی (URL)</label><input id="dsc-img-' + catId + '-' + subId + '" type="text" class="input" value="' + (sub.sampleImage||'') + '" style="direction:ltr;text-align:left" placeholder="https://..." /></div>';
+        // Per-color images
+        var colorImgs = sub.colorImages || {};
+        var colorCounts = sub.colorCounts || [1,2,3,4];
+        html += '<div style="grid-column:1/-1"><label class="label" style="font-size:0.85rem">🖼️ تصاویر نمونه به ازای هر رنگ</label>';
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.3rem">';
+        colorCounts.forEach(function(cc) {
+          html += '<div style="display:flex;align-items:center;gap:0.4rem">';
+          html += '<span style="font-size:0.8rem;color:var(--accent);white-space:nowrap;min-width:60px">' + cc + ' رنگ:</span>';
+          html += '<input id="dsc-cimg-' + catId + '-' + subId + '-' + cc + '" type="text" class="input" value="' + (colorImgs[cc]||'') + '" style="font-size:0.8rem;direction:ltr;text-align:left;padding:0.4rem" placeholder="URL عکس" />';
+          html += '</div>';
+        });
+        html += '</div></div>';
         html += '</div>';
         html += '<div style="display:flex;gap:0.5rem;margin-top:0.75rem">';
         html += '<button class="btn btn-success btn-sm" onclick="Admin.saveDesignSubcat(\'' + catId + '\',\'' + subId + '\')">💾 ذخیره</button>';
@@ -1075,6 +1087,14 @@ const Admin = {
     var priceVal = (document.getElementById('dsc-price-' + catId + '-' + subId).value || '').replace(/[۰-۹]/g, function(d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); });
     sub.basePrice = parseInt(priceVal) || 0;
     sub.sampleImage = document.getElementById('dsc-img-' + catId + '-' + subId).value.trim();
+    // Save per-color images
+    var colorImgs = {};
+    var ccList = sub.colorCounts || [1,2,3,4];
+    ccList.forEach(function(cc) {
+      var el = document.getElementById('dsc-cimg-' + catId + '-' + subId + '-' + cc);
+      if (el && el.value.trim()) colorImgs[cc] = el.value.trim();
+    });
+    sub.colorImages = colorImgs;
     Admin._saveDesignCats(cats);
     toast('زیرمجموعه ذخیره شد ✓', 'success');
     Admin.renderDesignCategories();
