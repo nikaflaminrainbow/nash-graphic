@@ -498,13 +498,22 @@ const Dashboard = {
   },
 
   updateBasePrice() {
-    // Use subcategory base price
-    let total = 0;
+    var total = 0;
+    // Priority: subcategory > main category
     if (Dashboard._currentSubcat && Dashboard._currentSubcat.basePrice) {
       total = Dashboard._currentSubcat.basePrice;
+    } else if (Dashboard._currentMainCatId) {
+      var cats = Dashboard._getDesignCats();
+      var mc = cats.find(function(c) { return c.id === Dashboard._currentMainCatId; });
+      if (mc && mc.basePrice) total = mc.basePrice;
     }
-    const el = document.getElementById('base-price');
-    if (el) el.textContent = formatPrice(total);
+    // Multiply by color count if set
+    var colorEl = document.getElementById('color-count');
+    var colorVal = colorEl ? parseInt(colorEl.value) || 1 : 1;
+    if (colorVal > 1) total = total * colorVal;
+
+    var el = document.getElementById('base-price');
+    if (el) el.textContent = formatPrice(total) + ' تومان';
     Dashboard._currentBasePrice = total;
   },
 
