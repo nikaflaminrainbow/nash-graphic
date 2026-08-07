@@ -221,7 +221,7 @@ const Admin = {
   async uploadLogo() {
     const file = document.getElementById('logo-file')?.files[0];
     if (!file) { toast(t('selectFileWarning'), 'warning'); return; }
-    if (file.size > 2 * 1024 * 1024) { toast(t('fileTooLarge'), 'error'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast(t('fileTooLarge'), 'error'); return; }
     showLoading(true);
     try {
       const ext = file.name.split('.').pop();
@@ -821,7 +821,7 @@ const Admin = {
   // ─── IMAGE UPLOAD HELPER ────────────────────────────
   _uploadSampleImage: function(file, callback) {
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { toast('حجم عکس حداکثر ۲ مگابایت باشد', 'error'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast('حجم عکس حداکثر ۵ مگابایت باشد', 'error'); return; }
     toast('در حال آپلود...', 'info');
 
     var path = 'design-samples/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_');

@@ -1,6 +1,6 @@
 -- Create storage bucket for design sample images
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES ('design-samples', 'design-samples', true, 2097152, '{image/png,image/jpeg,image/webp,image/gif}')
+VALUES ('design-samples', 'design-samples', true, 5242880, '{image/png,image/jpeg,image/webp,image/gif}')
 ON CONFLICT (id) DO NOTHING;
 
 -- Allow anon to upload

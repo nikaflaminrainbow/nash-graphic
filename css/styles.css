@@ -756,7 +756,7 @@ body[data-lang="fa"] .section-title em{font-family:var(--font-fa);}
 .order-form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s4);}
 .order-form-printer-layout{display:flex;gap:var(--s6);}
 .category-sample-box{flex-shrink:0;}
-.category-sample-box img{width:160px;border-radius:var(--r-md);}
+.category-sample-box img{width:min(90vw,500px);max-height:60vh;object-fit:contain;border-radius:var(--r-md);box-shadow:0 4px 20px rgba(0,0,0,0.5);}
 
 /* ══════════════════════════════════════════════════════════
    PACKAGES — premium tier cards
