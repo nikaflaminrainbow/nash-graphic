@@ -823,41 +823,55 @@ const Admin = {
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) { toast('حجم عکس حداکثر ۲ مگابایت باشد', 'error'); return; }
     toast('در حال آپلود...', 'info');
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      var base64 = e.target.result;
-      // Convert data URL to Blob
-      var arr = base64.split(',');
-      var mime = arr[0].match(/:(.*?);/)[1];
-      var bstr = atob(arr[1]);
-      var n = bstr.length;
-      var u8arr = new Uint8Array(n);
-      while(n--) u8arr[n] = bstr.charCodeAt(n);
-      var blob = new Blob([u8arr], { type: mime });
 
-      var path = 'design-samples/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-      var bucket = 'design-samples';
-      console.log('[Upload] starting...', path, blob.size, 'bytes');
+    var path = 'design-samples/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+    var bucket = 'design-samples';
 
-      supabase.storage.from(bucket).upload(path, blob, { contentType: file.type, upsert: false })
-        .then(function(r) {
-          console.log('[Upload] result:', r);
-          if (r.error) {
-            console.error('[Upload] error:', r.error);
-            toast('خطا: ' + r.error.message, 'error');
-            return;
-          }
-          var url = supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
-          console.log('[Upload] success:', url);
-          toast('عکس آپلود شد ✓', 'success');
-          if (callback) callback(url);
-        })
-        .catch(function(err) {
-          console.error('[Upload] catch:', err);
-          toast('خطا در آپلود: ' + (err.message || err), 'error');
-        });
+    // Use XMLHttpRequest for reliable upload via REST API
+    var xhr = new XMLHttpRequest();
+    var supabaseUrl = 'https://yeuyhsbzbrjxrxdulaiq.supabase.co';
+    var anonKey = (typeof supabase !== 'undefined' && supabase.supabaseKey) || '';
+
+    // Try to get the key from the supabase client
+    if (!anonKey) {
+      // Fallback: read from config.js global
+      try { anonKey = window.SUPABASE_ANON || ''; } catch(e) {}
+    }
+    if (!anonKey) {
+      toast('کلید API یافت نشد', 'error');
+      return;
+    }
+
+    xhr.upload.onprogress = function(e) {
+      if (e.lengthComputable) {
+        var pct = Math.round((e.loaded / e.total) * 100);
+        toast('آپلود: ' + pct + '%', 'info');
+      }
     };
-    reader.readAsDataURL(file);
+    xhr.onload = function() {
+      if (xhr.status === 200 || xhr.status === 201) {
+        var publicUrl = supabaseUrl + '/storage/v1/object/public/' + bucket + '/' + path;
+        console.log('[Upload] success:', publicUrl);
+        toast('عکس آپلود شد ✓', 'success');
+        if (callback) callback(publicUrl);
+      } else {
+        console.error('[Upload] HTTP', xhr.status, xhr.responseText);
+        toast('خطا در آپلود: ' + xhr.status, 'error');
+      }
+    };
+    xhr.onerror = function() {
+      console.error('[Upload] network error');
+      toast('خطای شبکه در آپلود', 'error');
+    };
+
+    // Build FormData
+    var fd = new FormData();
+    fd.append('file', file, file.name);
+    var uploadUrl = supabaseUrl + '/storage/v1/object/' + bucket + '/' + path;
+    xhr.open('POST', uploadUrl, true);
+    xhr.setRequestHeader('apikey', anonKey);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + anonKey);
+    xhr.send(fd);
   },
 
   _makeUploadBtn: function(inputId, targetInputId) {
