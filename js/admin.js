@@ -887,7 +887,11 @@ const Admin = {
             colorPrices: colorPrices || {},
             colorImages: colorImages || {},
             execMethods: execs.filter(function(e) { return e.subcategory_id === sub.id; }).map(function(em) {
-              return { id: em.id, name: em.name, sampleImage: em.sample_image || '' };
+              var emCp = em.color_prices;
+              if (typeof emCp === 'string') { try { emCp = JSON.parse(emCp); } catch(e) { emCp = {}; } }
+              var emCi = em.color_images;
+              if (typeof emCi === 'string') { try { emCi = JSON.parse(emCi); } catch(e) { emCi = {}; } }
+              return { id: em.id, name: em.name, sampleImage: em.sample_image || '', colorPrices: emCp || {}, colorImages: emCi || {} };
             })
           };
         })
@@ -974,8 +978,8 @@ const Admin = {
         subcategories: [{
           id: 'packaging', name: 'بسته‌بندی', basePrice: 500000, colorCounts: [1,2,3,4],
           execMethods: [
-            { id: 'from-photo', name: 'از روی عکس', sampleImage: '' },
-            { id: 'from-sketch', name: 'از روی اتود', sampleImage: '' }
+            { id: 'with-image', name: 'با تصویر', sampleImage: '' },
+            { id: 'without-image', name: 'بدون تصویر', sampleImage: '' }
           ]
         }]
       },
@@ -984,8 +988,8 @@ const Admin = {
         subcategories: [{
           id: 'catalog', name: 'کاتالوگ', basePrice: 600000, colorCounts: [1,2,3,4],
           execMethods: [
-            { id: 'from-photo', name: 'از روی عکس', sampleImage: '' },
-            { id: 'from-sketch', name: 'از روی اتود', sampleImage: '' }
+            { id: 'with-image', name: 'با تصویر', sampleImage: '' },
+            { id: 'without-image', name: 'بدون تصویر', sampleImage: '' }
           ]
         }]
       },
@@ -994,8 +998,8 @@ const Admin = {
         subcategories: [{
           id: 'business-card', name: 'کارت ویزیت', basePrice: 300000, colorCounts: [1,2,3,4],
           execMethods: [
-            { id: 'from-photo', name: 'از روی عکس', sampleImage: '' },
-            { id: 'from-sketch', name: 'از روی اتود', sampleImage: '' }
+            { id: 'with-image', name: 'با تصویر', sampleImage: '' },
+            { id: 'without-image', name: 'بدون تصویر', sampleImage: '' }
           ]
         }]
       },
@@ -1004,8 +1008,8 @@ const Admin = {
         subcategories: [{
           id: 'logo', name: 'لوگو', basePrice: 800000, colorCounts: [1,2,3,4],
           execMethods: [
-            { id: 'from-photo', name: 'از روی عکس', sampleImage: '' },
-            { id: 'from-sketch', name: 'از روی اتود', sampleImage: '' }
+            { id: 'with-image', name: 'با تصویر', sampleImage: '' },
+            { id: 'without-image', name: 'بدون تصویر', sampleImage: '' }
           ]
         }]
       }
@@ -1133,20 +1137,41 @@ const Admin = {
         // Exec methods
         html += '<div style="margin-bottom:0.5rem"><span style="font-size:0.8rem;color:var(--text-secondary);margin-left:0.5rem">نحوه اجرا:</span>';
         html += '<button class="btn btn-sm btn-ghost" style="font-size:0.75rem" onclick="Admin.addDesignExecMethod(\'' + catId + '\',\'' + subId + '\')">+ افزودن</button></div>';
-        html += '<div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.5rem">';
+
         (sub.execMethods || []).forEach(function(em) {
-          html += '<span style="display:inline-flex;align-items:center;gap:0.4rem;background:var(--glass-bg,rgba(255,255,255,0.05));border:1px solid var(--glass-border,rgba(255,255,255,0.1));border-radius:20px;padding:0.3rem 0.7rem;font-size:0.8rem">';
-          html += (em.sampleImage ? '<img src="' + em.sampleImage + '" style="width:16px;height:16px;border-radius:4px;object-fit:cover" onerror="this.style.display=\'none\'" />' : '📋');
-          html += '<span>' + em.name + '</span>';
-          html += '<button style="background:none;border:none;color:var(--danger,#ff4444);cursor:pointer;font-size:0.75rem;padding:0 2px" onclick="Admin.removeDesignExecMethod(\'' + catId + '\',\'' + subId + '\',\'' + em.id + '\')">✕</button>';
-          html += '</span>';
+          var emCp = em.colorPrices || {};
+          var emCi = em.colorImages || {};
+          var emColorCounts = sub.colorCounts || [1,2,3,4];
+          html += '<div style="background:var(--glass-bg,rgba(255,255,255,0.04));border:1px solid var(--glass-border,rgba(255,255,255,0.1));border-radius:8px;padding:0.75rem;margin-bottom:0.5rem">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">';
+          html += '<strong style="font-size:0.9rem;color:var(--accent)">' + (em.sampleImage ? '<img src="' + em.sampleImage + '" style="width:18px;height:18px;border-radius:4px;object-fit:cover;vertical-align:middle;margin-left:4px" onerror="this.style.display=\'none\'" />' : '📋') + ' ' + em.name + '</strong>';
+          html += '<button style="background:none;border:none;color:var(--danger,#ff4444);cursor:pointer;font-size:0.8rem;padding:0 4px" onclick="Admin.removeDesignExecMethod(\'' + catId + '\',\'' + subId + '\',\'' + em.id + '\')">🗑️ حذف</button>';
+          html += '</div>';
+          html += '<div style="display:grid;grid-template-columns:1fr;gap:0.4rem">';
+          emColorCounts.forEach(function(cc) {
+            var cpVal = emCp[cc] || '';
+            var ciVal = emCi[cc] || '';
+            var cpId = 'dem-cp-' + catId + '-' + subId + '-' + em.id + '-' + cc;
+            var ciId = 'dem-ci-' + catId + '-' + subId + '-' + em.id + '-' + cc;
+            var upId = 'dem-up-' + catId + '-' + subId + '-' + em.id + '-' + cc;
+            html += '<div style="display:flex;align-items:center;gap:0.4rem;background:var(--glass-bg,rgba(255,255,255,0.03));border:1px solid var(--glass-border,rgba(255,255,255,0.08));border-radius:6px;padding:0.3rem 0.5rem">';
+            html += '<span style="font-size:0.78rem;color:var(--accent);white-space:nowrap;min-width:50px;font-weight:bold">' + cc + ' رنگ:</span>';
+            html += '<input id="' + cpId + '" type="number" class="input" value="' + cpVal + '" style="font-size:0.78rem;direction:ltr;text-align:left;padding:0.3rem;width:110px" placeholder="قیمت (تومان)" />';
+            html += '<input id="' + ciId + '" type="text" class="input" value="' + (ciVal||'').replace(/"/g,'&quot;') + '" style="font-size:0.72rem;direction:ltr;text-align:left;padding:0.3rem;flex:1;min-width:0" placeholder="URL عکس نمونه" />';
+            html += '<label for="' + upId + '" style="cursor:pointer;font-size:0.85rem;padding:0.3rem 0.5rem;background:var(--accent);border-radius:4px;color:#000">📷</label>';
+            html += '<input id="' + upId + '" type="file" accept="image/*" style="display:none" onchange="Admin._handleUpload(this, \'' + ciId + '\')" />';
+            html += '</div>';
+          });
+          html += '</div>';
+          html += '<div style="display:flex;gap:0.4rem;margin-top:0.5rem">';
+          html += '<button class="btn btn-sm btn-success" onclick="Admin.saveDesignExecMethodEdit(\'' + catId + '\',\'' + subId + '\',\'' + em.id + '\')">💾 ذخیره</button>';
+          html += '</div>';
+          html += '</div>';
         });
-        html += '</div>';
 
         // Exec method add form (hidden)
         html += '<div id="dem-form-' + catId + '-' + subId + '" class="hidden" style="display:flex;gap:0.5rem;margin-bottom:0.5rem;flex-wrap:wrap">';
-        html += '<input id="dem-name-' + catId + '-' + subId + '" type="text" class="input" placeholder="نام نحوه اجرا" style="flex:1;min-width:140px" />';
-        html += '<input id="dem-img-' + catId + '-' + subId + '" type="text" class="input" placeholder="تصویر نمونه (URL)" style="flex:1;min-width:140px;direction:ltr" />';
+        html += '<input id="dem-name-' + catId + '-' + subId + '" type="text" class="input" placeholder="نام نحوه اجرا (مثلاً با تصویر)" style="flex:1;min-width:140px" />';
         html += '<button class="btn btn-sm btn-success" onclick="Admin.saveDesignExecMethod(\'' + catId + '\',\'' + subId + '\')">✓</button>';
         html += '<button class="btn btn-sm btn-ghost" onclick="document.getElementById(\'dem-form-' + catId + '-' + subId + '\').classList.add(\'hidden\')">✕</button>';
         html += '</div>';
@@ -1256,12 +1281,12 @@ const Admin = {
       sample_image: '', sort_order: maxOrder
     });
     await Admin._dcPost('design_exec_methods', {
-      id: 'from-photo-' + slug, subcategory_id: slug, name: 'از روی عکس',
-      sample_image: '', sort_order: 1
+      id: 'with-image-' + slug, subcategory_id: slug, name: 'با تصویر',
+      sample_image: '', color_prices: {}, color_images: {}, sort_order: 1
     });
     await Admin._dcPost('design_exec_methods', {
-      id: 'from-sketch-' + slug, subcategory_id: slug, name: 'از روی اتود',
-      sample_image: '', sort_order: 2
+      id: 'without-image-' + slug, subcategory_id: slug, name: 'بدون تصویر',
+      sample_image: '', color_prices: {}, color_images: {}, sort_order: 2
     });
     toast('زیرمجموعه اضافه شد ✓', 'success');
     Admin.renderDesignCategories();
@@ -1322,18 +1347,54 @@ const Admin = {
 
   async saveDesignExecMethod(catId, subId) {
     var name = document.getElementById('dem-name-' + catId + '-' + subId).value.trim();
-    var sampleImg = document.getElementById('dem-img-' + catId + '-' + subId).value.trim();
     if (!name) { toast('نام نحوه اجرا را وارد کنید', 'warning'); return; }
-    var slug = name.replace(/\s+/g, '-').toLowerCase().replace(/[^a-z0-9\-]/g, '') || ('em-' + Date.now());
+    var slug = name.replace(/\s+/g, '-').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF-]/g, '') || ('em-' + Date.now());
     var existingEms = await Admin._dcGet('design_exec_methods',
       'select=sort_order&subcategory_id=eq.' + encodeURIComponent(subId) + '&order=sort_order.desc&limit=1');
     var maxOrder = (existingEms.length > 0) ? (existingEms[0].sort_order || 0) + 1 : 1;
-    await Admin._dcPost('design_exec_methods', {
-      id: slug, subcategory_id: subId, name: name,
-      sample_image: sampleImg, sort_order: maxOrder
+    try {
+      await Admin._dcPost('design_exec_methods', {
+        id: slug, subcategory_id: subId, name: name,
+        sample_image: '', color_prices: {}, color_images: {}, sort_order: maxOrder
+      });
+      toast('نحوه اجرا اضافه شد ✓', 'success');
+      Admin.renderDesignCategories();
+    } catch(err) {
+      console.error('[ExecMethod Add]', err);
+      toast('خطا: ' + err.message, 'error');
+    }
+  },
+
+  async saveDesignExecMethodEdit(catId, subId, emId) {
+    var cats = await Admin._getDesignCats();
+    var cat = cats.find(function(c) { return c.id === catId; });
+    var sub = cat && (cat.subcategories || []).find(function(s) { return s.id === subId; });
+    if (!sub) return;
+    var emColorCounts = sub.colorCounts || [1,2,3,4];
+    var colorPrices = {};
+    var colorImages = {};
+    emColorCounts.forEach(function(cc) {
+      var cpEl = document.getElementById('dem-cp-' + catId + '-' + subId + '-' + emId + '-' + cc);
+      if (cpEl && cpEl.value) {
+        var pv = (cpEl.value || '').replace(/[۰-۹]/g, function(d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); });
+        colorPrices[cc] = parseInt(pv) || 0;
+      }
+      var ciEl = document.getElementById('dem-ci-' + catId + '-' + subId + '-' + emId + '-' + cc);
+      if (ciEl && ciEl.value.trim()) {
+        colorImages[cc] = ciEl.value.trim();
+      }
     });
-    toast('نحوه اجرا اضافه شد ✓', 'success');
-    Admin.renderDesignCategories();
+    try {
+      await Admin._dcPatch('design_exec_methods', {
+        color_prices: colorPrices,
+        color_images: colorImages
+      }, 'id=eq.' + encodeURIComponent(emId));
+      toast('ذخیره شد ✓', 'success');
+      Admin.renderDesignCategories();
+    } catch(err) {
+      console.error('[ExecMethod Edit]', err);
+      toast('خطا: ' + err.message, 'error');
+    }
   },
 
   async removeDesignExecMethod(catId, subId, emId) {

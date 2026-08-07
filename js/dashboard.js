@@ -359,7 +359,11 @@ const Dashboard = {
               colorPrices: colorPrices || {},
               colorImages: colorImages || {},
               execMethods: execs.filter(function(e) { return e.subcategory_id === sub.id; }).map(function(em) {
-                return { id: em.id, name: em.name, sampleImage: em.sample_image || '' };
+                var emCp = em.color_prices;
+                if (typeof emCp === 'string') { try { emCp = JSON.parse(emCp); } catch(e) { emCp = {}; } }
+                var emCi = em.color_images;
+                if (typeof emCi === 'string') { try { emCi = JSON.parse(emCi); } catch(e) { emCi = {}; } }
+                return { id: em.id, name: em.name, sampleImage: em.sample_image || '', colorPrices: emCp || {}, colorImages: emCi || {} };
               })
             };
           })
@@ -431,7 +435,7 @@ const Dashboard = {
 
     if (subcat.execMethods && subcat.execMethods.length) {
       execSel.innerHTML = `<option value="">${t('selectOption')}</option>` +
-        subcat.execMethods.map(em => `<option value="${em.id}" data-sample="${em.sampleImage||''}">${em.name}</option>`).join('');
+        subcat.execMethods.map(em => `<option value="${em.id}" data-sample="${em.sampleImage||''}" data-cp="${JSON.stringify(em.colorPrices||{}).replace(/"/g,'&quot;')}" data-ci="${JSON.stringify(em.colorImages||{}).replace(/"/g,'&quot;')}">${em.name}</option>`).join('');
     } else {
       execSel.innerHTML = `<option value="">${t('noExecMethodNeeded')}</option>`;
       Dashboard._loadColorsFromSubcat(subcat);
@@ -442,14 +446,16 @@ const Dashboard = {
     const execId = document.getElementById('exec-method').value;
     Dashboard.updateBasePrice();
 
-    // Update sample image from exec method
+    // Find full exec method data including colorPrices and colorImages
     const execSel = document.getElementById('exec-method');
     if (execSel?.value) {
       const opt = execSel.options[execSel.selectedIndex];
       Dashboard._currentExecMethod = {
         id: execSel.value,
         name: opt.text,
-        sampleImage: opt.getAttribute('data-sample') || ''
+        sampleImage: opt.getAttribute('data-sample') || '',
+        colorPrices: JSON.parse(opt.getAttribute('data-cp') || '{}'),
+        colorImages: JSON.parse(opt.getAttribute('data-ci') || '{}')
       };
     } else {
       Dashboard._currentExecMethod = null;
@@ -483,15 +489,19 @@ const Dashboard = {
     var sampleUrl = '';
     var selectedColor = (document.getElementById('color-count') || {}).value;
 
-    // 1. Per-color image (highest priority)
-    if (selectedColor && Dashboard._currentSubcat && Dashboard._currentSubcat.colorImages && Dashboard._currentSubcat.colorImages[selectedColor]) {
-      sampleUrl = Dashboard._currentSubcat.colorImages[selectedColor];
+    // 1. Exec method per-color image (highest priority)
+    if (selectedColor && Dashboard._currentExecMethod && Dashboard._currentExecMethod.colorImages && Dashboard._currentExecMethod.colorImages[selectedColor]) {
+      sampleUrl = Dashboard._currentExecMethod.colorImages[selectedColor];
     }
-    // 2. Exec method sample image
+    // 2. Exec method general sample image
     else if (Dashboard._currentExecMethod && Dashboard._currentExecMethod.sampleImage) {
       sampleUrl = Dashboard._currentExecMethod.sampleImage;
     }
-    // 3. Subcategory general sample image
+    // 3. Subcategory per-color image
+    else if (selectedColor && Dashboard._currentSubcat && Dashboard._currentSubcat.colorImages && Dashboard._currentSubcat.colorImages[selectedColor]) {
+      sampleUrl = Dashboard._currentSubcat.colorImages[selectedColor];
+    }
+    // 4. Subcategory general sample image
     else if (Dashboard._currentSubcat && Dashboard._currentSubcat.sampleImage) {
       sampleUrl = Dashboard._currentSubcat.sampleImage;
     }
@@ -516,11 +526,15 @@ const Dashboard = {
     var colorEl = document.getElementById('color-count');
     var colorVal = colorEl ? String(colorEl.value) : '';
 
-    // 1. Check per-color price (highest priority)
-    if (colorVal && Dashboard._currentSubcat && Dashboard._currentSubcat.colorPrices && Dashboard._currentSubcat.colorPrices[colorVal]) {
+    // 1. Check exec method per-color price (highest priority)
+    if (colorVal && Dashboard._currentExecMethod && Dashboard._currentExecMethod.colorPrices && Dashboard._currentExecMethod.colorPrices[colorVal]) {
+      total = Dashboard._currentExecMethod.colorPrices[colorVal];
+    }
+    // 2. Check subcategory per-color price
+    else if (colorVal && Dashboard._currentSubcat && Dashboard._currentSubcat.colorPrices && Dashboard._currentSubcat.colorPrices[colorVal]) {
       total = Dashboard._currentSubcat.colorPrices[colorVal];
     }
-    // 2. Subcategory base price × color count
+    // 3. Subcategory base price × color count
     else if (Dashboard._currentSubcat && Dashboard._currentSubcat.basePrice) {
       total = Dashboard._currentSubcat.basePrice;
       var cv = parseInt(colorVal) || 1;
