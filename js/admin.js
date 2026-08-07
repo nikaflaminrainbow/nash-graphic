@@ -822,30 +822,40 @@ const Admin = {
   _uploadSampleImage: function(file, callback) {
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) { toast('حجم عکس حداکثر ۲ مگابایت باشد', 'error'); return; }
+    toast('در حال آپلود...', 'info');
     var reader = new FileReader();
     reader.onload = function(e) {
       var base64 = e.target.result;
+      // Convert data URL to Blob
+      var arr = base64.split(',');
+      var mime = arr[0].match(/:(.*?);/)[1];
+      var bstr = atob(arr[1]);
+      var n = bstr.length;
+      var u8arr = new Uint8Array(n);
+      while(n--) u8arr[n] = bstr.charCodeAt(n);
+      var blob = new Blob([u8arr], { type: mime });
+
       var path = 'design-samples/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.]/g, '_');
       var bucket = 'design-samples';
-      // Try upload, if bucket doesn't exist create it first
-      supabase.storage.from(bucket).upload(path, base64, { contentType: file.type, upsert: false })
+      console.log('[Upload] starting...', path, blob.size, 'bytes');
+
+      supabase.storage.from(bucket).upload(path, blob, { contentType: file.type, upsert: false })
         .then(function(r) {
-          if (r.error && r.error.message && r.error.message.indexOf('Bucket not found') >= 0) {
-            // Auto-create bucket
-            return supabase.storage.createBucket(bucket, { public: true, fileSizeLimit: 2097152 })
-              .then(function() {
-                return supabase.storage.from(bucket).upload(path, base64, { contentType: file.type, upsert: false });
-              });
+          console.log('[Upload] result:', r);
+          if (r.error) {
+            console.error('[Upload] error:', r.error);
+            toast('خطا: ' + r.error.message, 'error');
+            return;
           }
-          return r;
-        })
-        .then(function(r) {
-          if (r.error) { console.error('Upload error:', r.error); toast('خطا در آپلود: ' + r.error.message, 'error'); return; }
           var url = supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+          console.log('[Upload] success:', url);
           toast('عکس آپلود شد ✓', 'success');
           if (callback) callback(url);
         })
-        .catch(function(err) { console.error('Upload err:', err); toast('خطا در آپلود', 'error'); });
+        .catch(function(err) {
+          console.error('[Upload] catch:', err);
+          toast('خطا در آپلود: ' + (err.message || err), 'error');
+        });
     };
     reader.readAsDataURL(file);
   },
