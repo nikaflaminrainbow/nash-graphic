@@ -837,6 +837,12 @@ const Admin = {
       headers: this._dcHeaders(),
       body: JSON.stringify(data)
     });
+    if (res.status === 409) {
+      // Conflict: record exists, try update instead
+      var patchData = Object.assign({}, data);
+      delete patchData.id;
+      return await this._dcPatch(table, patchData, 'id=eq.' + encodeURIComponent(data.id));
+    }
     if (!res.ok) throw new Error('DB error: ' + res.status);
     return await res.json();
   },
@@ -1254,15 +1260,22 @@ const Admin = {
   async deleteDesignCat(catId) {
     var cats = await Admin._getDesignCats();
     var cat = cats.find(function(c) { return c.id === catId; });
-    if (!confirm('حذف دسته‌بندی «' + (cat?.name || '') + '»؟')) return;
-    for (var i = 0; i < (cat.subcategories || []).length; i++) {
-      var sub = cat.subcategories[i];
+    if (!cat) { toast('دسته‌بندی پیدا نشد', 'error'); return; }
+    if (!confirm('حذف دسته‌بندی «' + cat.name + '»؟')) return;
+    try {
+    var subs = cat.subcategories || [];
+    for (var i = 0; i < subs.length; i++) {
+      var sub = subs[i];
       await Admin._dcDelete('design_exec_methods', 'subcategory_id=eq.' + encodeURIComponent(sub.id));
       await Admin._dcDelete('design_subcategories', 'id=eq.' + encodeURIComponent(sub.id));
     }
     await Admin._dcDelete('design_categories', 'id=eq.' + encodeURIComponent(catId));
     toast('حذف شد ✓', 'success');
     Admin.renderDesignCategories();
+    } catch(err) {
+      console.error('[Cat Delete]', err);
+      toast('خطا در حذف: ' + err.message, 'error');
+    }
   },
 
   async addDesignSubcat(catId) {
@@ -1334,10 +1347,15 @@ const Admin = {
 
   async deleteDesignSubcat(catId, subId) {
     if (!confirm('حذف این زیرمجموعه؟')) return;
-    await Admin._dcDelete('design_exec_methods', 'subcategory_id=eq.' + encodeURIComponent(subId));
-    await Admin._dcDelete('design_subcategories', 'id=eq.' + encodeURIComponent(subId));
-    toast('حذف شد ✓', 'success');
-    Admin.renderDesignCategories();
+    try {
+      await Admin._dcDelete('design_exec_methods', 'subcategory_id=eq.' + encodeURIComponent(subId));
+      await Admin._dcDelete('design_subcategories', 'id=eq.' + encodeURIComponent(subId));
+      toast('حذف شد ✓', 'success');
+      Admin.renderDesignCategories();
+    } catch(err) {
+      console.error('[Subcat Delete]', err);
+      toast('خطا در حذف: ' + err.message, 'error');
+    }
   },
 
   addDesignExecMethod(catId, subId) {
@@ -1398,9 +1416,14 @@ const Admin = {
   },
 
   async removeDesignExecMethod(catId, subId, emId) {
-    await Admin._dcDelete('design_exec_methods', 'id=eq.' + encodeURIComponent(emId));
-    toast('حذف شد ✓', 'success');
-    Admin.renderDesignCategories();
+    try {
+      await Admin._dcDelete('design_exec_methods', 'id=eq.' + encodeURIComponent(emId));
+      toast('حذف شد ✓', 'success');
+      Admin.renderDesignCategories();
+    } catch(err) {
+      console.error('[ExecMethod Delete]', err);
+      toast('خطا در حذف: ' + err.message, 'error');
+    }
   },
 
   async addDesignColorCount(catId, subId) {
@@ -1419,14 +1442,19 @@ const Admin = {
   },
 
   async removeDesignColorCount(catId, subId, count) {
-    var cats = await Admin._getDesignCats();
-    var cat = cats.find(function(c) { return c.id === catId; });
-    var sub = cat && (cat.subcategories || []).find(function(s) { return s.id === subId; });
-    if (!sub) return;
-    var newCounts = (sub.colorCounts || []).filter(function(c) { return c !== count; });
-    await Admin._dcPatch('design_subcategories', { color_counts: newCounts }, 'id=eq.' + encodeURIComponent(subId));
-    toast('حذف شد ✓', 'success');
-    Admin.renderDesignCategories();
+    try {
+      var cats = await Admin._getDesignCats();
+      var cat = cats.find(function(c) { return c.id === catId; });
+      var sub = cat && (cat.subcategories || []).find(function(s) { return s.id === subId; });
+      if (!sub) return;
+      var newCounts = (sub.colorCounts || []).filter(function(c) { return c !== count; });
+      await Admin._dcPatch('design_subcategories', { color_counts: newCounts }, 'id=eq.' + encodeURIComponent(subId));
+      toast('حذف شد ✓', 'success');
+      Admin.renderDesignCategories();
+    } catch(err) {
+      console.error('[Color Delete]', err);
+      toast('خطا در حذف: ' + err.message, 'error');
+    }
   },
 
   // ═══════════════════════════════════════
