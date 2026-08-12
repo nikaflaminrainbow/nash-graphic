@@ -521,6 +521,22 @@ const Dashboard = {
     }
   },
 
+  // Extend color count dropdown to 10 options
+  extendColorCountOptions() {
+    var colorSel = document.getElementById('color-count');
+    if (colorSel && colorSel.options.length <= 4) {
+      var currentVal = colorSel.value;
+      colorSel.innerHTML = '';
+      for (var i = 1; i <= 10; i++) {
+        var opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = i + (i === 4 ? ' رنگ (فول کالر)' : ' رنگ');
+        colorSel.appendChild(opt);
+      }
+      if (currentVal) colorSel.value = currentVal;
+    }
+  },
+
   async updateBasePrice() {
     var total = 0;
     var colorEl = document.getElementById('color-count');
@@ -535,11 +551,10 @@ const Dashboard = {
     else if (colorVal && Dashboard._currentSubcat && Dashboard._currentSubcat.colorPrices && Dashboard._currentSubcat.colorPrices[colorVal]) {
       total = Dashboard._currentSubcat.colorPrices[colorVal];
     }
-    // 3. Subcategory base price × color count
+    // 3. Subcategory base price (NOT multiplied by color count - base price is for the job)
     else if (Dashboard._currentSubcat && Dashboard._currentSubcat.basePrice) {
       total = Dashboard._currentSubcat.basePrice;
-      var cv = parseInt(colorVal) || 1;
-      if (cv > 1) total = total * cv;
+      // Note: basePrice is already the full price for the job, not per-color
     }
     // 3. Main category base price
     else if (Dashboard._currentMainCatId) {

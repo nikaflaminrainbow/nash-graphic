@@ -1226,6 +1226,11 @@ const Admin = {
     document.getElementById('dc-name').value = cat.name || '';
     document.getElementById('dc-sample-img').value = cat.sampleImage || '';
     document.getElementById('dc-edit-id').value = catId;
+    // Add upload button if not exists
+    var imgInput = document.getElementById('dc-sample-img');
+    if (!imgInput.nextElementSibling || !imgInput.nextElementSibling.classList.contains('upload-btn')) {
+      imgInput.insertAdjacentHTML('afterend', Admin._makeUploadBtn('up-editcat', 'dc-sample-img'));
+    }
   },
 
   async saveDesignCat() {
