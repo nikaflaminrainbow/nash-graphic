@@ -525,6 +525,7 @@ const Dashboard = {
     var total = 0;
     var colorEl = document.getElementById('color-count');
     var colorVal = colorEl ? String(colorEl.value) : '';
+    console.log('[Price Debug]', 'colorVal:', colorVal, 'exec:', Dashboard._currentExecMethod?.name, 'prices:', Dashboard._currentExecMethod?.colorPrices);
 
     // 1. Check exec method per-color price (highest priority)
     if (colorVal && Dashboard._currentExecMethod && Dashboard._currentExecMethod.colorPrices && Dashboard._currentExecMethod.colorPrices[colorVal]) {
