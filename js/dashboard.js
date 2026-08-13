@@ -443,10 +443,7 @@ const Dashboard = {
   },
 
   onExecMethodChange() {
-    const execId = document.getElementById('exec-method').value;
-    Dashboard.updateBasePrice();
-
-    // Find full exec method data including colorPrices and colorImages
+    // Find full exec method data including colorPrices and colorImages FIRST
     const execSel = document.getElementById('exec-method');
     if (execSel?.value) {
       const opt = execSel.options[execSel.selectedIndex];
@@ -461,6 +458,8 @@ const Dashboard = {
       Dashboard._currentExecMethod = null;
     }
 
+    // THEN update price (now _currentExecMethod is set)
+    Dashboard.updateBasePrice();
     Dashboard.updateCategorySample();
     Dashboard._loadColorsFromSubcat(Dashboard._currentSubcat);
   },
