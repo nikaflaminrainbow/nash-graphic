@@ -469,11 +469,22 @@ const Dashboard = {
     const colorSel = document.getElementById('color-count');
     if (!colorSel) return;
     colorSel.innerHTML = `<option value="">${t('selectOption')}</option>`;
-    if (!subcat || !subcat.colorCounts) return;
+    if (!subcat || !subcat.colorCounts) {
+      // Default to 1-10 if no colorCounts defined
+      for (let i = 1; i <= 10; i++) {
+        const label = i === 4 ? '۴ رنگ (فول کالر)' : (i + ' رنگ');
+        colorSel.innerHTML += `<option value="${i}">${label}</option>`;
+      }
+      return;
+    }
 
     const colorNames = { 1: '۱ رنگ', 2: '۲ رنگ', 3: '۳ رنگ', 4: '۴ رنگ (فول کالر)' };
-    colorSel.innerHTML = `<option value="">${t('selectOption')}</option>` +
-      subcat.colorCounts.map(n => `<option value="${n}" data-extra="0">${colorNames[n] || (n + ' ' + t('colorUnit'))}</option>`).join('');
+    // Use subcat colorCounts but extend to 10 if needed
+    const maxColor = Math.max(...subcat.colorCounts, 10);
+    for (let i = 1; i <= maxColor; i++) {
+      const label = colorNames[i] || (i === 4 ? '۴ رنگ (فول کالر)' : (i + ' رنگ'));
+      colorSel.innerHTML += `<option value="${i}" ${subcat.colorCounts.includes(i) ? '' : 'data-extra="0"'}>${label}</option>`;
+    }
   },
 
   onColorCountChange() {
@@ -520,23 +531,6 @@ const Dashboard = {
       img.src = '';
     }
   },
-
-  // Extend color count dropdown to 10 options
-  extendColorCountOptions() {
-    var colorSel = document.getElementById('color-count');
-    if (colorSel && colorSel.options.length <= 4) {
-      var currentVal = colorSel.value;
-      colorSel.innerHTML = '';
-      for (var i = 1; i <= 10; i++) {
-        var opt = document.createElement('option');
-        opt.value = i;
-        opt.textContent = i + (i === 4 ? ' رنگ (فول کالر)' : ' رنگ');
-        colorSel.appendChild(opt);
-      }
-      if (currentVal) colorSel.value = currentVal;
-    }
-  },
-
   async updateBasePrice() {
     var total = 0;
     var colorEl = document.getElementById('color-count');
