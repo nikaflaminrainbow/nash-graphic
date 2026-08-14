@@ -400,7 +400,6 @@ const Dashboard = {
     typeSel.innerHTML = `<option value="">${t('selectOption')}</option>`;
     document.getElementById('exec-method').innerHTML = `<option value="">${t('selectOption')}</option>`;
     document.getElementById('color-count').innerHTML = `<option value="">${t('selectOption')}</option>`;
-    Dashboard.updateBasePrice();
     Dashboard._currentMainCatId = mainId || null;
     Dashboard._currentSubcat = null;
     Dashboard._currentExecMethod = null;
@@ -420,7 +419,6 @@ const Dashboard = {
     if (!execSel) return;
     execSel.innerHTML = `<option value="">${t('selectOption')}</option>`;
     document.getElementById('color-count').innerHTML = `<option value="">${t('selectOption')}</option>`;
-    Dashboard.updateBasePrice();
     Dashboard._currentExecMethod = null;
     Dashboard.updateCategorySample();
 
